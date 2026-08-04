@@ -9,10 +9,40 @@ fresh Lean environment before it is counted.
 
 ---
 
+## What this system is — and what it is not
+
+**There is no language model in this prover.** The tactic policy is a fixed repertoire of 19 Lean
+tactics (`simp`, `aesop`, `linarith`, `intro x`, …) plus five templates that consume a retrieved
+premise (`exact {p}`, `apply {p}`, `rw [{p}]`, `rw [← {p}]`, `simp [{p}]`). Every number below comes
+from that policy.
+
+This is a deliberate choice, not an unfinished one. With no generator there is no prompt sensitivity,
+no sampling variance and no training confound, so **any difference between arms is attributable to
+the retriever alone**. The price is that absolute pass rates are a floor rather than a competitive
+result, and are not comparable to systems built on fine-tuned 7B models.
+
+The generator is the next stage and has not started:
+
+| stage | generator | status |
+|---|---|---|
+| **now** | model-free repertoire (19 tactics + 5 premise templates) | ✅ complete, results below |
+| **next** | REAL-Prover-v1 — 7B, `Qwen2.5-Math-7B` base, stepwise, retrieval-native | not started |
+| later | Qwen3-4B / Kimina-Prover-Distill-1.7B, LoRA SFT | planned |
+
+REAL-Prover-v1 is chosen because it is **openly released and already retrieval-native** — it was
+trained to consume premises from its own single-vector retriever, `LeanSearch-PS`. That lets the
+generator be frozen and only the retriever swapped, which is the same controlled design used here,
+at a scale where the numbers are comparable to published work (their FATE-M 56.7 with retrieval,
+44.7 without).
+
+`Qwen2.5-Math-1.5B` was ruled out on a hard constraint rather than a preference: a **4K context
+window** cannot hold retrieved premises alongside a proof state.
+
+---
+
 ## Results
 
-Retrieval arms over a **model-free** tactic policy — a fixed repertoire of 19 Lean tactics plus
-templates that consume retrieved premises. There is no language model anywhere in this system.
+Retrieval arms over the model-free policy described above.
 
 | benchmark | none (floor) | ProofLens-SV | ProofLens-LI | Δ LI vs none | Δ LI vs SV |
 |---|--:|--:|--:|--:|--:|
@@ -61,20 +91,33 @@ all 22 proofs independently verified. This is the opposite of the study's hypoth
 reported as measured. There is also real displacement — 15 problems only SV solved, 2 only LI
 solved — so the arms are not nested.
 
-**However, the arms are not yet computationally matched, and the asymmetry favours SV:**
+**However, the arms are not computationally matched, and the asymmetry favours SV.** The cause is
+the defining property of late interaction: it keeps **one vector per token** instead of one per
+premise.
 
-* **SV ranks all 276,070 premises exactly** — one matrix-vector product.
-* **LI is two-stage** — mean-pooled vectors select the top 1,000 candidates (**0.36%** of the
-  corpus), and MaxSim only ever sees those. A premise dropped by the first stage cannot be
-  recovered by late interaction.
+| | vectors stored | index size | exact search |
+|---|--:|--:|---|
+| ProofLens-SV | 276,070 (one per premise) | 943 MB | one matrix-vector product — **feasible** |
+| ProofLens-LI | **21,752,080** (78.8 per premise) | 5.5 GB fp16 | see below — **infeasible** |
 
-The `recall@10 = 0.992` printed at index-build time does **not** address this: it was measured with
-*premise embeddings* as probes, so it describes a premise retrieving its neighbours, not a proof
-state retrieving a premise. It is measured on the wrong distribution.
+Exact full-corpus MaxSim requires scoring every query token against every premise token: a
+`384 × 21,752,080` score matrix, ≈ **8.4 billion floats (33 GB) for a single query**. At roughly
+5,300 queries per benchmark run that is not an engineering inconvenience, it is a different
+algorithm.
 
-So the honest reading today is **"exact single-vector beats approximate multi-vector at a
-first-stage budget of 0.36%"** — a claim about candidate generation, not about late interaction.
-`scripts/measure_li_recall.py` settles which it is; see [Next steps](#next-steps).
+So LI is necessarily **two-stage**: mean-pooled vectors select the top 1,000 candidates — **0.36% of
+the corpus** — and MaxSim only ever sees those. A premise the first stage drops cannot be recovered
+by late interaction, no matter how good the late interaction is. SV has no such stage; it ranks all
+276,070 exactly.
+
+The `recall@10 = 0.992` printed at index-build time does **not** license ignoring this. It was
+measured with *premise embeddings* as probes, so it describes a premise retrieving its neighbours —
+not a proof state retrieving a premise. Wrong distribution, optimistic by an unknown margin.
+
+**So the honest reading today is "exact single-vector beats approximate multi-vector at a 0.36%
+first-stage budget."** That is a claim about candidate generation, not about late interaction, and
+the two have very different implications. `scripts/measure_li_recall.py` separates them; see
+[H1 in Next steps](#next-steps-as-hypotheses).
 
 ### Cost
 
@@ -148,19 +191,6 @@ described in the design notes. `build_table1.py` selects the most recent *finali
 4. **A model-free policy reaches 8.5–32% depending on benchmark**, which sets the floor any
    generator must clear to demonstrate it is contributing.
 
-## Next steps
-
-1. **Measure LI's true first-stage recall** (`scripts/measure_li_recall.py`) at n_candidates =
-   1,000 / 5,000 / 20,000 against exact full-corpus MaxSim, using real queries. If recall at 1,000
-   is materially below 0.99, re-run the LI arm at the budget where it saturates. Until then the
-   LI-vs-SV comparison is between an exact retriever and an approximate one.
-2. **Re-run ProofNet and miniF2F LI** at `query_length=384`; those rows were produced at 256. On
-   FATE-M this changed retrieval without changing the outcome, so the expected effect is small.
-3. **Add SV on ProofNet/miniF2F** only if FATE-M's comparison survives step 1, since neither
-   benchmark has shown resolution.
-4. **A real generator.** 51 of 71 exhausted FATE-M searches hit `max_expansions`, not the clock —
-   the search runs out of ideas, not time. No search budget substitutes for a language model.
-
 ## Limitations
 
 * The policy is model-free; absolute rates are **not** comparable to 7B-class systems
@@ -175,6 +205,57 @@ described in the design notes. `build_table1.py` selects the most recent *finali
   context beyond the goal is used.
 
 ---
+
+## Next steps, as hypotheses
+
+Each step is stated as a claim that the experiment can falsify, with what each outcome would mean.
+
+### H1 — LI lost to its candidate generator, not to late interaction
+
+> **Claim.** LI's two-stage retrieval drops relevant premises before MaxSim ever sees them. At a
+> first-stage budget large enough to recover them, LI's FATE-M score rises materially above 22/141.
+
+**Test.** `scripts/measure_li_recall.py` computes exact full-corpus MaxSim in chunks for 40 real
+queries and reports recall@10 at n_candidates = 1,000 / 5,000 / 20,000. Then re-run the LI arm at
+whichever budget the recall curve saturates.
+
+| outcome | reading |
+|---|---|
+| recall@1,000 ≈ 0.99 | the approximation is not the problem; **SV genuinely beats LI here**, and the finding stands as an architecture result |
+| recall@1,000 ≪ 0.99, LI improves when re-run | the published −13 measured **candidate generation**, not late interaction; the arm comparison must be redone at matched recall |
+| recall low but LI does **not** improve | late interaction is not exploiting the premises it recovers — the more interesting negative result, and one worth a section of its own |
+
+**This is the highest-value job remaining.** It decides which of two very different theses the
+project has produced, and it costs one GPU job.
+
+### H2 — the benchmark, not the retriever, determines whether retrieval can matter
+
+> **Claim.** Retrieval's measurable effect is a function of how much a benchmark's proofs depend on
+> citing lemmas, and is near zero where tactic automation suffices.
+
+Already supported: FATE-M +10, ProofNet +3, miniF2F exactly 0 with **identical solved sets**.
+Strengthening it needs the SV arm on ProofNet and miniF2F, and the LI re-runs at
+`query_length=384`. Lower priority: on FATE-M the query-length change altered retrieval without
+altering the outcome, so the expected effect is small.
+
+### H3 — the generator, not the search budget, is the binding constraint
+
+> **Claim.** The model-free policy is limited by the tactics it can propose, not by how long it may
+> search. Adding a language model moves the numbers; adding search budget does not.
+
+Already supported: **51 of 71** exhausted FATE-M searches hit `max_expansions`, not the wall clock.
+The search runs out of ideas, not time.
+
+**Test.** Tier 1 — freeze REAL-Prover-v1 (7B) and swap only the retriever, reproducing their
+published FATE-M 56.7 with `LeanSearch-PS` as a calibration gate before trusting any of our arms at
+that scale.
+
+**Anticipated cost, since this is where memory actually becomes a constraint:** 7B weights in bf16
+are ~15 GB, and best-first search with `samples_per_step=32` issues 32 sequences per expansion. The
+KV cache — not the weights — dominates, and it grows with prompt length, which retrieval directly
+inflates by adding premises to context. vLLM's PagedAttention is the mitigation and an 80 GB A100
+should hold it, but the pilot-before-committing rule applies: measure on 20 problems and extrapolate
+before spending GPU-hours.
 
 ## Reproducing
 
