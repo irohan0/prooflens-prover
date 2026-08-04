@@ -1,0 +1,18 @@
+# Normalise line endings. CRLF breaks bash on Linux and makes SLURM reject a jobscript outright
+# ("/bin/bash^M: bad interpreter"), which the predecessor project worked around by running
+# `dos2unix` before every `sbatch`. Enforcing it here removes that manual step for good.
+* text=auto
+
+*.sh      text eol=lf
+*.sbatch  text eol=lf
+*.py      text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+*.toml    text eol=lf
+*.lean    text eol=lf
+
+# Binary / large artefacts: never normalise.
+*.npy   binary
+*.png   binary
+*.pdf   binary
+*.safetensors binary

@@ -1,0 +1,87 @@
+[project]
+name = "prooflens-prover"
+version = "0.1.0"
+description = "Late-interaction (multi-vector) premise retrieval inside a live stepwise Lean 4 theorem prover."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11,<3.13"
+
+# Runtime floor only. EXACT versions are pinned in `uv.lock` (and exported to
+# `requirements.lock.txt` for CSF3). Never `pip install` an unpinned version into a run
+# environment — every reported number must be reproducible from the lock file.
+dependencies = [
+    "numpy>=1.26,<3",
+    "pyyaml>=6.0",
+    "orjson>=3.10",          # per-attempt JSONL logs get large; orjson keeps write cost off the critical path
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# --- Lean interaction (Tier 0). Kept separate so the hermetic tests never need Lean. ---
+# lean-interact wraps leanprover-community/repl (the MAINTAINED REPL). The previous project's
+# blocker was lean-dojo's `Lean4Repl`, which is a different, unmaintained Lean-side shim --
+# see results/phase_logs/phase20.md in the prooflens repo.
+lean = [
+    "lean-interact>=0.9,<1.0",
+]
+
+# --- Retrieval (Tier 1). Ports the prooflens retrievers onto a full-Mathlib index. ---
+retrieval = [
+    "torch>=2.4",
+    "transformers>=4.44",
+    "pylate>=1.1",
+    "bm25s>=0.2",
+    "safetensors>=0.4",
+]
+
+# --- Training + serving (Tier 2/3). vLLM is the throughput requirement, not a nicety. ---
+train = [
+    "torch>=2.4",
+    "transformers>=4.44",
+    "peft>=0.13",
+    "trl>=0.11",
+    "accelerate>=0.34",
+    "datasets>=3.0",
+    "bitsandbytes>=0.44; platform_system == 'Linux'",
+]
+serve = [
+    "vllm>=0.6",
+]
+
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+# Everything except vLLM (which pins torch hard and is best installed into its own env on CSF3).
+all = [
+    "prooflens-prover[lean,retrieval,train,dev]",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+# `-ra` surfaces skip reasons: the Lean-dependent tests skip loudly when no toolchain is present,
+# and a silently-skipped Lean test is exactly how a broken harness reaches the cluster.
+addopts = "-ra --strict-markers"
+markers = [
+    "lean: requires a working Lean 4 + Mathlib toolchain (skipped when absent)",
+    "gpu: requires a CUDA device (skipped when absent)",
+    "slow: takes more than ~30s",
+]

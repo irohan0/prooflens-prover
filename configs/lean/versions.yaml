@@ -1,0 +1,52 @@
+# Lean/Mathlib version pins — one per benchmark family.
+#
+# THIS FILE EXISTS BECAUSE VERSION DRIFT SILENTLY DESTROYS RESULTS.
+#
+# Measured on Lean v4.31.0 (the version we first built, matching nothing):
+#
+#   benchmark        elaborated   failed
+#   FATE-M           138/141      3
+#   ProofNet-test    171/186      15
+#   miniF2F-test     212/244      32   <- 13% of the benchmark
+#
+# 31 of the 32 miniF2F failures were a single syntax change: Mathlib deprecated the big-operator
+# binder `∑ x in s, f x` in favour of `∑ x ∈ s, f x`, then removed it. The remaining failures
+# (type mismatch, unknown constant, failed to synthesize) are ordinary Mathlib API drift.
+#
+# A problem that does not elaborate is scored as UNPROVED. So running on the wrong version would
+# have depressed every arm equally, produced a plausible-looking pass rate, and raised no error
+# anywhere. The rate would simply have been wrong, and the benchmark would have looked harder than
+# it is.
+#
+# We do NOT edit benchmark statements to make them parse on a newer Mathlib. Editing the problems
+# is exactly the silent divergence that makes a comparison with published numbers meaningless.
+# Instead each benchmark runs on the version it was written for.
+
+defaults:
+  # Where projects are built. Override per machine; on CSF3 use scratch, never home.
+  project_root: ${HOME}/lean
+
+versions:
+  # REAL-Prover's benchmark suite. Their conf/config.py points LEAN_TEST_PATH at
+  # github.com/frenzymath/lean_test_v4160 — i.e. Lean 4.16.0. Matching it is required both for the
+  # statements to parse and for our rows to be comparable to their published 56.7 / 23.7 / 54.1.
+  realprover:
+    lean_version: v4.16.0
+    project_dir: ${HOME}/lean/mathlib_v4160
+    benchmarks: [fate_m, proofnet_test, proofnet_valid, minif2f_test, minif2f_valid]
+
+  # PutnamBench pins itself: lean4/lean-toolchain says v4.27.0 and its lakefile requires
+  # mathlib @ v4.27.0.
+  putnambench:
+    lean_version: v4.27.0
+    project_dir: ${HOME}/lean/mathlib_v4270
+    benchmarks: [putnambench]
+
+# Cost of each environment, measured locally (WSL2, warm cache):
+#   Mathlib project on disk : 5.4 GB (v4.16.0), 7.3 GB (v4.31.0)
+#   Lean toolchain          : 1.3-2.8 GB each
+#   `import Mathlib`        : ~86-162 s, ~4 GB RSS, once per worker per import set
+#   per-problem elaboration : 0.01-0.13 s once the environment is warm
+#
+# Each benchmark uses exactly ONE import set, so the import cost amortises to well under a second
+# per problem. Budget ~5 GB RAM per concurrent worker (see LEARNINGS.md).

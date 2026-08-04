@@ -1,0 +1,52 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Environments / secrets ---
+.env
+.env.local
+
+# --- Lean ---
+.lake/
+lake-packages/
+lakefile.olean
+*.olean
+*.ilean
+
+# --- Data, indices, checkpoints: large and regenerable, never committed ---
+#
+# LEADING SLASH IS LOAD-BEARING. `data/` (no slash) matches a directory named `data` at ANY depth,
+# which silently excluded `src/prooflens_prover/data/` -- the benchmark and premise-corpus loaders --
+# from every commit. The package imported fine locally because the files were on disk; a fresh
+# clone raised `ModuleNotFoundError: No module named 'prooflens_prover.data'`. Caught by the CSF3
+# gate, which is the only place the repo is ever exercised as a clone.
+/data/
+/indices/
+*.jsonl
+!tests/fixtures/**/*.jsonl        # tiny bundled fixtures DO ship, so tests run on a fresh clone
+!results/exported/**/*.jsonl      # distilled run records (no traces) — the published numbers
+*.npy
+*.faiss
+*.safetensors
+*.bin
+results/checkpoints/
+results/logs/
+
+# --- Cluster noise ---
+slurm-*.out
+slurm-*.err
+
+# --- Results that DO ship (tables + figures) are whitelisted above by omission ---
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
