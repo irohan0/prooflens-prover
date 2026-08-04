@@ -56,9 +56,10 @@ Distinguishing them requires a paired control. Reading proof text cannot do it.
 
 ### 3. Single-vector beat multi-vector — with a confound that is not yet excluded
 
-On FATE-M, SV solved **35/141** against LI's **22/141**: −13 problems, p = 0.0023. This is the
-opposite of the study's hypothesis and it is reported as measured. There is also real displacement —
-15 problems only SV solved, 2 only LI solved — so the arms are not nested.
+On FATE-M, SV solved **35/141** against LI's **22/141**: −13 problems, p = 0.0023, with all 35 and
+all 22 proofs independently verified. This is the opposite of the study's hypothesis and it is
+reported as measured. There is also real displacement — 15 problems only SV solved, 2 only LI
+solved — so the arms are not nested.
 
 **However, the arms are not yet computationally matched, and the asymmetry favours SV:**
 
@@ -77,15 +78,24 @@ first-stage budget of 0.36%"** — a claim about candidate generation, not about
 
 ### Cost
 
+On FATE-M, SV is both more accurate **and about twice as fast per query** — the practical case for
+late interaction here is weak on both axes at this first-stage budget.
+
+| | size | ms/query |
+|---|--:|--:|
+| BM25 | 169 MB | **9.8** |
+| ProofLens-SV (768-dim) | 943 MB | **44.7** |
+| ProofLens-LI (fp16, 21.7M token vectors, 78.8/premise) | ~5.5 GB | **85.9** |
+
 | | |
 |---|--:|
 | Premise corpus | 276,070 premises (Mathlib v4.16.0) |
-| BM25 index | 169 MB, 9.8 ms/query |
-| SV index | 943 MB, 768-dim |
-| LI index | ~5.5 GB fp16, 21.7M token vectors (78.8/premise) |
-| LI query | 77.9 ms |
 | `import Mathlib`, NFS | 439–691 s |
 | `import Mathlib`, node-local | **158 s** |
+
+LI at `query_length=256` measured 77.9 ms; raising it to the locked 384 cost ~10% latency and
+changed which premises were retrieved (5,288 → 5,330 retrieval calls) but left the solved set
+unchanged — the problems a model-free policy closes have short goals, where truncation never bit.
 
 ### Verification
 
@@ -95,14 +105,33 @@ Lean environment, sharing nothing with the search but the cheat-token regex. `so
 
 | run | verified |
 |---|---|
+| FATE-M / SV | **35/35 ✅** |
 | FATE-M / LI | 22/22 ✅ |
 | FATE-M / none | ✅ |
 | ProofNet / LI | ✅ |
 | miniF2F / LI | 78/78 ✅ |
-| **FATE-M / SV** | **not yet run** |
 
-The SV row of the results table is therefore **provisional**. It is the number that reverses the
-hypothesis and it has not been independently re-checked.
+Every reported proof re-elaborates cleanly. The results table is not provisional.
+
+### Run records
+
+`results/exported/` holds each run's manifest and per-problem outcomes (traces stripped; they are
+the bulk of the file and no reported number depends on them). The table above regenerates from them:
+
+```bash
+python scripts/build_table1.py --results-root results/exported/logs
+```
+
+Superseded runs are kept rather than deleted, because two of them are the evidence for defects
+described in the design notes. `build_table1.py` selects the most recent *finalised* run per
+(benchmark, arm), so their presence does not affect the table.
+
+| run | note |
+|---|---|
+| `..._5fcb0b4` | 5-problem smoke run |
+| `..._027cff0` | superseded: a REPL restart voided problems 109–140 |
+| `..._a59423a` | superseded: `query_length=256` |
+| `..._9cc3513` | current: `query_length=384` |
 
 ---
 
@@ -121,15 +150,15 @@ hypothesis and it has not been independently re-checked.
 
 ## Next steps
 
-1. **Verify the SV run.** Nothing above is final until it passes.
-2. **Measure LI's true first-stage recall** (`scripts/measure_li_recall.py`) at n_candidates =
+1. **Measure LI's true first-stage recall** (`scripts/measure_li_recall.py`) at n_candidates =
    1,000 / 5,000 / 20,000 against exact full-corpus MaxSim, using real queries. If recall at 1,000
    is materially below 0.99, re-run the LI arm at the budget where it saturates. Until then the
    LI-vs-SV comparison is between an exact retriever and an approximate one.
-3. **Re-run ProofNet and miniF2F LI** at `query_length=384`; those rows were produced at 256.
-4. **Add SV on ProofNet/miniF2F** only if FATE-M's comparison survives step 2, since neither
+2. **Re-run ProofNet and miniF2F LI** at `query_length=384`; those rows were produced at 256. On
+   FATE-M this changed retrieval without changing the outcome, so the expected effect is small.
+3. **Add SV on ProofNet/miniF2F** only if FATE-M's comparison survives step 1, since neither
    benchmark has shown resolution.
-5. **A real generator.** 51 of 71 exhausted FATE-M searches hit `max_expansions`, not the clock —
+4. **A real generator.** 51 of 71 exhausted FATE-M searches hit `max_expansions`, not the clock —
    the search runs out of ideas, not time. No search budget substitutes for a language model.
 
 ## Limitations

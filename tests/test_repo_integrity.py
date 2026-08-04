@@ -92,3 +92,64 @@ def test_large_generated_artefacts_stay_ignored(in_git_repo):
         assert result.returncode == 0, (
             f"{path} is NOT ignored — large generated data must never be committed"
         )
+
+
+class TestGitignoreSyntax:
+    """`.gitignore` has silently excluded needed files twice; both were syntax subtleties.
+
+    1. `data/` (no leading slash) matches a directory named `data` at ANY depth, which excluded
+       `src/prooflens_prover/data/` from every commit.
+    2. A trailing `#` comment is NOT a comment — git only honours `#` at the start of a line — so
+       `!results/exported/**/*.jsonl   # keep these` becomes a pattern ending in the comment text
+       and matches nothing. That silently dropped the exported run records from the commit meant to
+       publish them, and had already made the `tests/fixtures` whitelist dead on arrival.
+
+    Neither failure produces an error anywhere. Both are cheap to detect.
+    """
+
+    def test_no_trailing_comments_on_pattern_lines(self):
+        bad = []
+        for n, raw in enumerate((REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines(),
+                                start=1):
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            # An unescaped `#` after the start of a pattern is literal text, not a comment.
+            if "#" in line.replace(r"\#", ""):
+                bad.append(f"  line {n}: {raw}")
+        assert not bad, (
+            "`.gitignore` patterns with a trailing `#` comment — git treats the comment as part of "
+            "the pattern, so these rules match nothing:\n" + "\n".join(bad)
+        )
+
+    def test_negation_patterns_actually_reinclude(self, in_git_repo):
+        """Every `!` rule must un-ignore at least one path, or it is dead weight pretending to work.
+
+        Checked with `git check-ignore`, which is git's own resolver — reimplementing the matching
+        rules here would just reproduce whatever misunderstanding caused the bug.
+        """
+        if not in_git_repo:
+            pytest.skip("not a git repo")
+        negations = [
+            ln.strip()[1:] for ln in
+            (REPO_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+            if ln.strip().startswith("!")
+        ]
+        for pattern in negations:
+            # Resolve the pattern to concrete files, skipping rules whose target does not exist yet.
+            base = pattern.split("*")[0].rstrip("/")
+            root = REPO_ROOT / base
+            if not root.exists():
+                continue
+            suffix = pattern.rsplit(".", 1)[-1]
+            matches = list(root.rglob(f"*.{suffix}"))
+            if not matches:
+                continue
+            rel = matches[0].relative_to(REPO_ROOT).as_posix()
+            ignored = subprocess.run(
+                ["git", "-C", str(REPO_ROOT), "check-ignore", "-q", rel],
+            ).returncode == 0
+            assert not ignored, (
+                f"`!{pattern}` does not re-include anything — {rel} is still ignored. "
+                "A negation that matches nothing is worse than no rule: it reads as protection."
+            )

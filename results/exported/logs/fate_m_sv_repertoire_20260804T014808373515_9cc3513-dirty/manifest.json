@@ -1,0 +1,76 @@
+{
+  "run_id": "fate_m_sv_repertoire_20260804T014808373515_9cc3513-dirty",
+  "name": "fate_m_sv_repertoire",
+  "seed": 0,
+  "git_commit": "9cc3513-dirty",
+  "started_utc": "2026-08-04T01:48:08.373515+00:00",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Linux-5.14.0-611.24.1.el9_7.x86_64-x86_64-with-glibc2.34",
+    "hostname": "node862.csf3.man.alces.network",
+    "cpu_count": 48,
+    "packages": {
+      "torch": "2.11.0",
+      "transformers": "5.3.0",
+      "accelerate": "1.14.0",
+      "datasets": "5.0.1",
+      "pylate": "1.6.0",
+      "lean-interact": "0.11.5",
+      "numpy": "2.4.6"
+    },
+    "gpus": [
+      {
+        "name": "NVIDIA A100-SXM4-80GB",
+        "total_memory_gb": 79.25,
+        "capability": "8.0"
+      }
+    ],
+    "slurm": {
+      "SLURM_CPUS_ON_NODE": "8",
+      "SLURM_JOB_PARTITION": "gpuA",
+      "SLURM_JOB_ID": "18209034",
+      "SLURM_JOB_NAME": "pl_prove",
+      "SLURM_JOB_NODELIST": "node862"
+    },
+    "lean": "Lean (version 4.32.2, x86_64-unknown-linux-gnu, commit f3b06c705e6c85f5314019d5d3baab0fec5b580c, Release)"
+  },
+  "config": {
+    "benchmark": "fate_m",
+    "arm": "sv",
+    "policy": "repertoire+sv",
+    "top_k": 10,
+    "min_closers": 19,
+    "index": "data/index/sv_ft_novel_lr3e6",
+    "corpus_id": "276070:31db61c63a9b7ee1",
+    "n_problems": 141,
+    "offset": 0,
+    "search": {
+      "max_expansions": 64,
+      "samples_per_step": 32,
+      "max_depth": 32,
+      "wall_clock_s": 600.0,
+      "tactic_timeout": 60.0,
+      "length_penalty": 0.5,
+      "dedupe_states": true
+    },
+    "lean_project": "/tmp/slurm.18209034/prooflens_lean/mathlib_v4160",
+    "lean_version": null
+  },
+  "outcome": {
+    "finished_utc": "2026-08-04T05:24:28.278792+00:00",
+    "n_problems": 141,
+    "n_proved": 35,
+    "pass_rate": 0.2482,
+    "elapsed_s": 12793.1,
+    "n_this_session": 141,
+    "n_resumed": 0,
+    "n_error": 1,
+    "n_stale_env_recoveries": 1,
+    "retrieval": {
+      "n_queries": 4817,
+      "total_latency_s": 215.37,
+      "mean_latency_ms": 44.71,
+      "mean_premises_returned": 10.0
+    }
+  }
+}

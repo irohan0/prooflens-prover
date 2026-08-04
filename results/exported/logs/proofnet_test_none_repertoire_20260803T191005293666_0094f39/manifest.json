@@ -1,0 +1,70 @@
+{
+  "run_id": "proofnet_test_none_repertoire_20260803T191005293666_0094f39",
+  "name": "proofnet_test_none_repertoire",
+  "seed": 0,
+  "git_commit": "0094f39",
+  "started_utc": "2026-08-03T19:10:05.293666+00:00",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Linux-5.14.0-611.24.1.el9_7.x86_64-x86_64-with-glibc2.34",
+    "hostname": "node1254.csf3.man.alces.network",
+    "cpu_count": 168,
+    "packages": {
+      "torch": "2.11.0",
+      "transformers": "5.3.0",
+      "accelerate": "1.14.0",
+      "datasets": "5.0.1",
+      "pylate": "1.6.0",
+      "lean-interact": "0.11.5",
+      "numpy": "2.4.6"
+    },
+    "gpus": [],
+    "slurm": {
+      "SLURM_CPUS_ON_NODE": "8",
+      "SLURM_JOB_PARTITION": "multicore",
+      "SLURM_JOB_ID": "18194849",
+      "SLURM_JOB_NAME": "pl_prove",
+      "SLURM_JOB_NODELIST": "node1254"
+    },
+    "lean": "Lean (version 4.32.2, x86_64-unknown-linux-gnu, commit f3b06c705e6c85f5314019d5d3baab0fec5b580c, Release)"
+  },
+  "config": {
+    "benchmark": "proofnet_test",
+    "arm": "none",
+    "policy": "repertoire+none",
+    "top_k": 10,
+    "min_closers": 19,
+    "index": "data/index/li_ft_novel_bm25",
+    "corpus_id": null,
+    "n_problems": 186,
+    "offset": 0,
+    "search": {
+      "max_expansions": 64,
+      "samples_per_step": 32,
+      "max_depth": 32,
+      "wall_clock_s": 600.0,
+      "tactic_timeout": 60.0,
+      "length_penalty": 0.5,
+      "dedupe_states": true
+    },
+    "lean_project": "/tmp/slurm.18194849/prooflens_lean/mathlib_v4160",
+    "lean_version": null
+  },
+  "outcome": {
+    "finished_utc": "2026-08-03T23:08:11.726660+00:00",
+    "n_problems": 186,
+    "n_proved": 9,
+    "pass_rate": 0.0484,
+    "elapsed_s": 14155.2,
+    "n_this_session": 186,
+    "n_resumed": 0,
+    "n_error": 5,
+    "n_stale_env_recoveries": 1,
+    "retrieval": {
+      "n_queries": 0,
+      "total_latency_s": 0.0,
+      "mean_latency_ms": 0.0,
+      "mean_premises_returned": 0.0
+    }
+  }
+}

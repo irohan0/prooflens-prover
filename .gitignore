@@ -30,8 +30,15 @@ lakefile.olean
 /data/
 /indices/
 *.jsonl
-!tests/fixtures/**/*.jsonl        # tiny bundled fixtures DO ship, so tests run on a fresh clone
-!results/exported/**/*.jsonl      # distilled run records (no traces) — the published numbers
+# COMMENTS MUST BE ON THEIR OWN LINE. Git only treats `#` as a comment at the START of a line, so a
+# trailing comment becomes part of the pattern and the rule silently matches nothing. Both
+# negations below were written with trailing comments and neither worked: the exported run records
+# were excluded from the commit that was supposed to publish them, and the fixture whitelist had
+# been dead since it was written (latent only because no fixture existed yet).
+# Tiny bundled fixtures DO ship, so tests run on a fresh clone:
+!tests/fixtures/**/*.jsonl
+# Distilled run records (traces stripped) — every published number is recomputable from these:
+!results/exported/**/*.jsonl
 *.npy
 *.faiss
 *.safetensors
