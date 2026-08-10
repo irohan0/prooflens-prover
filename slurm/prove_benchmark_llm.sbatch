@@ -98,6 +98,13 @@ true    # `[ ... ] && ...` returns 1 when the test fails, which `set -e` would t
 DEVICE="${DEVICE:-cuda}"
 # li only. Empty = the index's stored 1000, which measured recall@10 = 0.443 on real queries.
 N_CANDIDATES="${N_CANDIDATES:-}"
+# The sampling DRAW, and the only thing a replicate may vary. `--seed` reaches the vLLM engine as
+# `LLM(seed=...)` while `SamplingParams.seed` stays None, so a run is reproducible at a given SEED
+# and a different SEED is an independent draw. The whole Tier 1 table was produced at SEED=0, which
+# is one draw and therefore carries no estimate of its own variance -- see
+# `scripts/replication_variance.py`. Was previously not settable here at all, so every run silently
+# took argparse's default.
+SEED="${SEED:-0}"
 EXTRA="${EXTRA:-}"
 
 export PATH="$HOME/.elan/bin:$PATH"
@@ -136,6 +143,7 @@ echo "benchmark : $BENCHMARK | arm: $ARM | index: $INDEX"
 echo "model     : $MODEL"
 echo "n_cand    : ${N_CANDIDATES:-(index default)}"
 echo "sampling  : $SAMPLES samples/step, temp $TEMPERATURE, top_p $TOP_P, max_tokens $MAX_TOKENS"
+echo "seed      : $SEED  (the sampling draw; replicates differ ONLY here)"
 echo "template  : $TEMPLATE  (watch the log for 'PROMPT FORMAT MISMATCH')"
 echo "retrieval : $RETRIEVAL_PYTHON (separate process)"
 echo "vllm      : $("$PY" -c 'import vllm; print(vllm.__version__)' 2>&1 | tail -1)"
@@ -174,6 +182,7 @@ echo
     --dtype "$DTYPE" \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --device "$DEVICE" \
+    --seed "$SEED" \
     ${N_CANDIDATES:+--n-candidates "$N_CANDIDATES"} \
     $EAGER_FLAG \
     $EXTRA

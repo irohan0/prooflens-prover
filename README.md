@@ -783,7 +783,7 @@ phase rather than half-finished across several.
 | phase | question | cost | status |
 |---|---|---|---|
 | **1** | Does LI win the problems needing premises it never trained on? ([H7](#h7--the-null-is-two-populations-cancelling-rather-than-noise--answered)) | analysis only, no GPU | ✅ **answered — no** |
-| **2** | Does the +0 survive re-sampling? ([H8](#h8--the-architecture-null-is-stable-under-re-sampling)) | ~16–20 GPU-h | not started |
+| **2** | Does the +0 survive re-sampling — and is the disagreement above noise? ([H8](#h8--the-architecture-null-is-stable-under-re-sampling)) | ~17.7 GPU-h | ⏳ code ready, needs 8 cluster runs |
 | **3** | Does LI pull ahead at wider search? ([H5](#h5--the-null-is-a-property-of-the-search-width-not-of-the-retrievers)) | ~16 GPU-h | not started |
 | **4** | Does the benchmark-dependence hold for an LLM? (miniF2F under Tier 1) | ~9 GPU-h | not started |
 | **5** | Does fusing the two rankings beat both? ([H4](#h4--the-two-architectures-are-complementary-so-fusion-should-beat-both)) | ½ day + 8 GPU-h | not started |
@@ -1013,18 +1013,39 @@ reported above treats a problem's outcome as fixed given its arm — and for a t
 model it is not. The 17/17 symmetry is one draw from a distribution whose spread has never been
 measured.
 
-**Test.** Re-run `sv` and `li` on both benchmarks twice more, changing nothing but the sampling
-draw — 8 runs, ~16–20 GPU-hours — and report the LI−SV difference as a mean and standard deviation
-over three independent samples rather than a single number. Outcomes:
+**Two further claims are more fragile than Δ itself, and they fail together.** A null is not
+manufactured by variance — noise hides effects, it does not invent zeros — so Δ = +0 is comparatively
+safe. But these are not:
 
-* **|Δ| stays small across all three draws** → the null is a property of the retrievers and the
-  headline stands, now with an error bar instead of an assumption.
-* **Δ swings by more than a few problems** → the single-sample paired tests overstate their own
-  precision, and every Tier 1 contrast needs restating as a mean over draws. This would be an
-  uncomfortable finding and it is better found here than by an examiner.
+* **"Equal counts, different theorems"** ([T5](#t5-equal-counts-different-theorems--and-the-ceiling-exceeds-the-effect)) rests on 17 problems being solved by exactly one arm.
+* **The fusion ceiling of +17** ([H4](#h4--the-two-architectures-are-complementary-so-fusion-should-beat-both)) rests on the union reaching 89.
 
-Nothing else in the write-up changes either way, which is exactly why it is worth doing first: it is
-the only phase that can *invalidate* a number already reported.
+If re-running **one arm against itself** also flips ~17 problems and its own two draws also union to
+~+17, then both claims describe the sampler rather than the retrievers, and both have to be withdrawn.
+Nothing in the current data can tell: with one draw per arm there is no estimate of what a re-run does
+on its own.
+
+**Test.** Re-run `sv` and `li` on both benchmarks at two further seeds — 8 runs, ~17.7 GPU-hours —
+and measure the **noise floor**: the same arm, the same configuration, a different sampling draw.
+`scripts/replication_variance.py` then reports every between-arm quantity against that floor. It also
+computes the estimand a single draw only approximates: each problem's *solve rate* across draws,
+paired between arms.
+
+The script refuses to report rather than mislead in two cases — two runs sharing a seed, and two
+draws whose shared proofs are **byte-identical**, which would mean the seed never reached the sampler
+and every variance below it is a measurement of nothing.
+
+Outcomes:
+
+* **Floor is small, Δ stays near 0** → the null is a property of the retrievers, now with an error
+  bar instead of an assumption, and T5 and H4 survive.
+* **Floor is comparable to 17** → "different theorems" and the fusion ceiling are resampling headroom.
+  Two of the more interesting statements in this README come out, and H4 stops being the
+  best-supported next experiment. Uncomfortable, and far better found here than by an examiner.
+* **Δ swings by several problems between draws** → every single-draw paired test overstates its
+  precision and each Tier 1 contrast needs restating as a mean over draws.
+
+This is the only phase that can *invalidate* a number already published, which is why it goes first.
 
 ### H5 — the null is a property of the search width, not of the retrievers
 
@@ -1240,6 +1261,27 @@ is the bulk of `attempts.jsonl` and is stripped from the exported records. Its o
 (`results/exported/tables/root_quality_*.json`) ships so the numbers are auditable, but reproducing them from
 scratch means re-running the arms.
 
+**Replication variance** — Phase 2. Re-run an arm at a different `SEED` and the noise floor becomes
+measurable:
+
+```bash
+for SEED in 1 2; do
+  for ARM in sv li; do
+    BENCHMARK=fate_m ARM=$ARM SEED=$SEED N_CANDIDATES=50000 \
+        sbatch -p <gpu-partition> -A <account> -G 1 slurm/prove_benchmark_llm.sbatch
+  done
+done
+
+python scripts/replication_variance.py \
+    --run results/logs/<sv_seed0> --run results/logs/<sv_seed1> --run results/logs/<sv_seed2> \
+    --run results/logs/<li_seed0> --run results/logs/<li_seed1> --run results/logs/<li_seed2>
+```
+
+`SEED` is the sampling draw and the **only** thing a replicate may vary; the script refuses runs that
+differ in anything else, and refuses two runs sharing a seed. Pass the control arm's runs first —
+arm order fixes the sign of every delta, and sorting alphabetically would silently make `li` the
+baseline.
+
 **Unseen-premise stratification** — Phase 1, the test of whether the architecture null is two
 populations cancelling. Runs from the exported records, since it needs only each proof's text:
 
@@ -1268,7 +1310,7 @@ python scripts/build_table1.py --results-root results/exported/logs --policy rep
 ### Tests
 
 ```bash
-pytest tests/ -q -m "not lean"                                    # 636, hermetic
+pytest tests/ -q -m "not lean"                                    # 667, hermetic
 PROOFLENS_LEAN_PROJECT=~/lean/mathlib_v4160 pytest tests/ -q -m lean
 ```
 
@@ -1324,7 +1366,7 @@ src/prooflens_prover/
   utils/        seeding, logging, run manifests, io
 scripts/        extraction, index building, benchmarks, verification, analysis
 slurm/          cluster jobs
-tests/          636 hermetic + 9 live-Lean
+tests/          667 hermetic + 9 live-Lean
 results/        exported run records and tables
 ```
 

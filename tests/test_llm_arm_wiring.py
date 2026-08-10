@@ -263,6 +263,17 @@ class TestSbatchForTheLlmArm:
         for flag in ("--temperature", "--top-p", "--max-tokens", "--samples-per-step"):
             assert flag in invocation, f"{flag} is never passed to prove_benchmark.py"
 
+    def test_the_sampling_draw_is_settable_and_defaults_to_zero(self):
+        """Phase 2 needs replicates, and a replicate is a run that differs only in the seed.
+
+        The sbatch had no SEED at all, so every Tier 1 run silently took argparse's default and the
+        whole table is one draw. Without this knob a replicate could only be produced by smuggling
+        `--seed` through EXTRA, which the manifest would record identically to the original.
+        """
+        src = self._src()
+        assert 'SEED="${SEED:-0}"' in src, "SEED must be settable and default to the Tier 1 draw"
+        assert "--seed" in self._invocation(src), "--seed never reaches prove_benchmark.py"
+
     def test_it_leaves_gpu_headroom_for_the_query_encoder(self):
         """Three consumers share the GPU, and one of them allocates after vLLM has taken its share.
 
