@@ -17,16 +17,16 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from replication_variance import (  # noqa: E402
+from prooflens_prover.eval.draws import (  # noqa: E402
     discordance,
-    group_draws,
     identical_proof_fraction,
     load_draw,
     solve_rate_map,
-    spread,
     union_gain,
 )
+from replication_variance import group_draws, spread  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 

@@ -306,7 +306,40 @@ are not that.**
 
 `results/exported/tables/novel_premise_*.json`.
 
-### T5. Equal counts, different theorems — and the ceiling exceeds the effect
+### T5. The tie is not one run counted twice
+
+Equal counts on two independent benchmarks — 46 vs 46 and 26 vs 26 — is exactly the shape a
+duplicated or mislabelled run would take. If one arm had been run twice and one copy relabelled, the
+two "arms" would agree exactly and every figure derived from them would be an artefact. That
+deserves a test rather than an assurance, and `scripts/verify_arm_distinctness.py` is it.
+
+The decisive signal is proof text. At a fixed `--seed` the vLLM engine is deterministic, so two runs
+of the *same* arm agree on every shared proof, character for character.
+
+| SV vs LI @50k | FATE-M | ProofNet-test | a duplicate would give |
+|---|--:|--:|--:|
+| both solved | 35 | 20 | — |
+| **byte-identical proofs** | **22.9%** | **45.0%** | **~100%** |
+| discordant problems | 22 | 12 | **0** |
+| recorded retriever | `sv` / `li` | `sv` / `li` | identical |
+| retrieval latency | 37.6 / 929.6 ms (24.7×) | 36.4 / 1010.6 ms (27.7×) | identical |
+
+Four independent signals, and a duplicate fails all four at once. **Verdict: distinct runs.**
+
+**And the tie is unremarkable.** Given `k` problems where two equivalent arms disagree, each falling
+either way with probability ½, an exact tie has probability `C(k, k/2) / 2ᵏ` — **0.168** at FATE-M's
+22 disagreements and **0.226** at ProofNet's 12. Those are the *modal* outcomes: an exact tie is the
+single most likely result when two arms are equivalent, more likely than any other delta. Both ties
+together carry probability 0.038, which is an ordinary coincidence rather than a red flag.
+
+So the equality of *totals* is the least informative thing in the table. What matters is that the
+solved *sets* differ substantially — which is [T6](#t6-equal-counts-different-theorems--and-the-ceiling-exceeds-the-effect),
+and whether that difference exceeds sampling noise is
+[Phase 2](#h8--the-architecture-null-is-stable-under-re-sampling).
+
+`results/exported/tables/arm_distinctness_*.json`.
+
+### T6. Equal counts, different theorems — and the ceiling exceeds the effect
 
 | benchmark | SV | LI @50k | LI-only | SV-only | SV ∪ LI |
 |---|--:|--:|--:|--:|--:|
@@ -323,7 +356,7 @@ The union is an oracle: it picks the winning retriever per problem, knowing the 
 ceiling, not a result — but it is the ceiling a fusion arm chases, and it needs no new retriever and
 no training. See [H4](#h4--the-two-architectures-are-complementary-so-fusion-should-beat-both).
 
-### T6. Where the searches actually die
+### T7. Where the searches actually die
 
 Every problem-arm's terminal status, from the run records:
 
@@ -350,7 +383,7 @@ FATE-M and 86 → 77 → 77 on ProofNet, with the LI arm lowest on FATE-M. Retri
 partly to give the model something to say at states where it would otherwise fall silent, which is the
 same story the root-state log-probabilities tell from the other direction.
 
-### T7. Cost
+### T8. Cost
 
 LI's accuracy gap against SV is zero and its cost gap is not.
 
@@ -726,6 +759,10 @@ prompt-format finding.
 * Two Tier 1 arms were run per benchmark from a single job each, so there is **no seed replication**:
   the LLM samples at temperature 1.5 and a re-run would not reproduce the solved set exactly. The
   17/17 symmetry is one sample of a paired difference, not an average over seeds.
+* **The `none` arm's manifest records `index: data/index/li_ft_novel_bm25`**, which it never opened.
+  The sbatch passes its default `INDEX` regardless of arm and the manifest records the argument, not
+  the use; `policy_config.retriever: none` and `n_queries: 0` are the fields that say what actually
+  happened. Cosmetic, but it reads like a mislabelled run until those two are checked.
 * **The unseen-premise metric has three known weaknesses**, all reported rather than corrected.
   Premise names are matched across two Mathlib versions (the predecessor traced commit `29dcec07`,
   this project indexes v4.16.0), and **2,331 of 62,500 training premise names — 3.7% — have no
@@ -1017,7 +1054,7 @@ measured.
 manufactured by variance — noise hides effects, it does not invent zeros — so Δ = +0 is comparatively
 safe. But these are not:
 
-* **"Equal counts, different theorems"** ([T5](#t5-equal-counts-different-theorems--and-the-ceiling-exceeds-the-effect)) rests on 17 problems being solved by exactly one arm.
+* **"Equal counts, different theorems"** ([T5](#t6-equal-counts-different-theorems--and-the-ceiling-exceeds-the-effect)) rests on 17 problems being solved by exactly one arm.
 * **The fusion ceiling of +17** ([H4](#h4--the-two-architectures-are-complementary-so-fusion-should-beat-both)) rests on the union reaching 89.
 
 If re-running **one arm against itself** also flips ~17 problems and its own two draws also union to
@@ -1310,7 +1347,7 @@ python scripts/build_table1.py --results-root results/exported/logs --policy rep
 ### Tests
 
 ```bash
-pytest tests/ -q -m "not lean"                                    # 667, hermetic
+pytest tests/ -q -m "not lean"                                    # 684, hermetic
 PROOFLENS_LEAN_PROJECT=~/lean/mathlib_v4160 pytest tests/ -q -m lean
 ```
 
@@ -1362,11 +1399,11 @@ src/prooflens_prover/
   retrieval/    base, bm25, dense (SV + LI), lean tokenizer
   prover/       best-first search, model-free repertoire, vLLM policy, prompt templates
   data/         benchmark and premise-corpus loaders
-  eval/         paired comparison, significance
+  eval/         paired comparison, significance, draws (one run as one sample)
   utils/        seeding, logging, run manifests, io
 scripts/        extraction, index building, benchmarks, verification, analysis
 slurm/          cluster jobs
-tests/          667 hermetic + 9 live-Lean
+tests/          684 hermetic + 9 live-Lean
 results/        exported run records and tables
 ```
 

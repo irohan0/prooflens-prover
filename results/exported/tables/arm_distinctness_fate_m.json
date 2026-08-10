@@ -1,0 +1,116 @@
+{
+  "benchmarks": [
+    "fate_m"
+  ],
+  "seeds": [
+    0
+  ],
+  "duplicate_proof_fraction_threshold": 0.95,
+  "pairs": [
+    {
+      "pair": "none vs sv",
+      "n_both_solved": 36,
+      "fraction_identical_proofs": 0.1388888888888889,
+      "only_first": 3,
+      "only_second": 10,
+      "discordant": 13,
+      "proved": [
+        39,
+        46
+      ],
+      "tie": false,
+      "tie_probability_under_equivalence": null,
+      "retriever": [
+        "none",
+        "sv"
+      ],
+      "index": [
+        "data/index/li_ft_novel_bm25",
+        "data/index/sv_ft_novel_lr3e6"
+      ],
+      "mean_latency_ms": [
+        0.0,
+        37.61
+      ],
+      "n_queries": [
+        0,
+        3874
+      ],
+      "run_id": [
+        "fate_m_none_vllm_20260809T152210619068_8175a00",
+        "fate_m_sv_vllm_20260809T182632701350_8175a00"
+      ],
+      "duplicate": false
+    },
+    {
+      "pair": "none vs li@50k",
+      "n_both_solved": 33,
+      "fraction_identical_proofs": 0.18181818181818182,
+      "only_first": 6,
+      "only_second": 13,
+      "discordant": 19,
+      "proved": [
+        39,
+        46
+      ],
+      "tie": false,
+      "tie_probability_under_equivalence": null,
+      "retriever": [
+        "none",
+        "li"
+      ],
+      "index": [
+        "data/index/li_ft_novel_bm25",
+        "data/index/li_ft_novel_bm25"
+      ],
+      "mean_latency_ms": [
+        0.0,
+        929.6
+      ],
+      "n_queries": [
+        0,
+        4137
+      ],
+      "run_id": [
+        "fate_m_none_vllm_20260809T152210619068_8175a00",
+        "fate_m_li_vllm_20260809T151828316972_8175a00"
+      ],
+      "duplicate": false
+    },
+    {
+      "pair": "sv vs li@50k",
+      "n_both_solved": 35,
+      "fraction_identical_proofs": 0.22857142857142856,
+      "only_first": 11,
+      "only_second": 11,
+      "discordant": 22,
+      "proved": [
+        46,
+        46
+      ],
+      "tie": true,
+      "tie_probability_under_equivalence": 0.16818809509277344,
+      "retriever": [
+        "sv",
+        "li"
+      ],
+      "index": [
+        "data/index/sv_ft_novel_lr3e6",
+        "data/index/li_ft_novel_bm25"
+      ],
+      "mean_latency_ms": [
+        37.61,
+        929.6
+      ],
+      "n_queries": [
+        3874,
+        4137
+      ],
+      "run_id": [
+        "fate_m_sv_vllm_20260809T182632701350_8175a00",
+        "fate_m_li_vllm_20260809T151828316972_8175a00"
+      ],
+      "duplicate": false
+    }
+  ]
+}

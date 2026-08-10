@@ -48,69 +48,26 @@ import json
 import statistics
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from prooflens_prover.eval.compare import (  # noqa: E402
-    bootstrap_ci,
-    format_budget,
-    permutation_p,
+from prooflens_prover.eval.compare import bootstrap_ci, permutation_p  # noqa: E402
+from prooflens_prover.eval.draws import (  # noqa: E402
+    Draw,
+    discordance,
+    identical_proof_fraction,
+    load_draw,
+    solve_rate_map,
+    union_gain,
 )
 from prooflens_prover.utils.logging import ensure_utf8_output  # noqa: E402
 
 #: Config keys allowed to differ between two draws of the same arm. `n_problems` can differ when a
 #: run was resumed; everything else differing means the two runs are different experiments.
 DRAW_VARYING = frozenset({"n_problems"})
-
-
-@dataclass
-class Draw:
-    """One run: a single sampling draw of one arm on one benchmark."""
-
-    run_id: str
-    benchmark: str
-    arm: str
-    seed: int
-    config: dict
-    attempted: set[str] = field(default_factory=set)
-    solved: set[str] = field(default_factory=set)
-    proofs: dict[str, str] = field(default_factory=dict)
-
-
-def load_draw(run_dir: Path) -> Draw:
-    """Read one run into a `Draw`, with problem ids namespaced by benchmark.
-
-    Namespacing matters as soon as two benchmarks are pooled: FATE-M and ProofNet both number their
-    problems from scratch, so an un-namespaced union would silently merge unrelated problems.
-    """
-    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
-    cfg = manifest.get("config", {})
-    n_candidates = cfg.get("n_candidates")
-    arm = cfg.get("arm", "?")
-
-    draw = Draw(
-        run_id=manifest.get("run_id", run_dir.name),
-        benchmark=cfg.get("benchmark", "?"),
-        arm=f"{arm}@{format_budget(n_candidates)}" if n_candidates else arm,
-        seed=int(manifest.get("seed", 0)),
-        config=cfg,
-    )
-    for line in (run_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
-        pid = f"{draw.benchmark}:{row['problem_id']}"
-        draw.attempted.add(pid)
-        if row.get("proved"):
-            draw.solved.add(pid)
-            # Joined rather than kept as a list so the identity check is one string comparison; the
-            # separator cannot occur inside a tactic.
-            draw.proofs[pid] = "\n;;\n".join(row.get("proof") or ())
-    return draw
 
 
 def group_draws(run_dirs) -> dict[tuple[str, str], list[Draw]]:
@@ -141,35 +98,6 @@ def group_draws(run_dirs) -> dict[tuple[str, str], list[Draw]]:
                 )
         draws.sort(key=lambda d: d.seed)
     return dict(groups)
-
-
-def identical_proof_fraction(a: Draw, b: Draw) -> tuple[int, float | None]:
-    """`(problems both solved, fraction whose proofs are byte-identical)`.
-
-    The tripwire on the whole design: if the seed never reached the sampler, or a run was copied,
-    every shared proof matches and every variance below is zero — which reads as an exceptionally
-    stable result rather than an absent measurement.
-    """
-    shared = a.solved & b.solved
-    if not shared:
-        return 0, None
-    return len(shared), sum(1 for p in shared if a.proofs.get(p) == b.proofs.get(p)) / len(shared)
-
-
-def discordance(a: set[str], b: set[str]) -> tuple[int, int]:
-    """`(|a \\ b|, |b \\ a|)` — problems exactly one of the two solved."""
-    return len(a - b), len(b - a)
-
-
-def union_gain(a: set[str], b: set[str]) -> int:
-    """How many problems either-of-two solves beyond the better single set."""
-    return len(a | b) - max(len(a), len(b))
-
-
-def solve_rate_map(draws: list[Draw]) -> dict[str, float]:
-    """`{problem: fraction of draws that solved it}` over problems every draw attempted."""
-    shared = set.intersection(*(d.attempted for d in draws))
-    return {p: sum(1 for d in draws if p in d.solved) / len(draws) for p in shared}
 
 
 def spread(values: list[float]) -> tuple[float, float | None]:
