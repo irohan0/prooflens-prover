@@ -41,6 +41,14 @@ ever consumes the best. Between the two retrieval arms the top candidate is not 
 is very slightly *worse* on both benchmarks. The architecture difference is real, is measurable in
 the generator, and sits where the search never looks.
 
+**And the benchmarks barely exercise the regime where late interaction wins.** Its measured strength
+is *out-of-distribution* robustness — on novel premises it stays flat where single-vector drops
+−17.9%, while single-vector wins in-distribution. But the premises these benchmarks' proofs actually
+cite are **2.6× concentrated in the 21.8% of Mathlib the retriever trained on** (fraction unseen
+0.43 against a 0.782 base rate). Retrieval runs in-distribution almost all the time here, so the
+tie is not evidence against that robustness result — it is what that result predicts once the
+deployment distribution is measured.
+
 And the two architectures are not interchangeable even where they tie. Across Tier 1's 327 problems
 each retriever solves exactly 72 — but **17 differ in each direction, so either-retriever reaches
 89**. The fusion ceiling (+17) is larger than retrieval's own effect (+14). Equal counts, different
@@ -249,7 +257,56 @@ understated; LI also drew slightly more candidates than SV and still lost on bes
 are 141/141 on FATE-M against 180/186 on ProofNet, which independently reproduces the known fact that
 4 ProofNet statements do not elaborate under Lean v4.16.0.
 
-### T4. Equal counts, different theorems — and the ceiling exceeds the effect
+### T4. Why the predecessor's robustness advantage does not transfer
+
+Late interaction's measured strength in the predecessor study was **out-of-distribution
+robustness**: on LeanDojo's `novel_premises` split a matched single-vector retriever dropped −17.9%
+from seen to novel premises while LI stayed flat and won in 5/5 seeds — and, importantly, SV won on
+the easier in-distribution `random` split. So the two architectures were never uniformly ordered;
+which one wins depends on how novel the premises are.
+
+That makes a testable prediction about the tie above. If LI's 17 exclusive wins are the problems
+whose proofs need premises the retriever never trained on, and SV's 17 are the problems needing
+premises it did, then **+0 is two populations cancelling, not noise** — and the predecessor's claim
+survives end to end. `scripts/novel_premise_stratification.py` tests it from the existing logs by
+classifying every premise a proof cites against the retriever's own training positives (62,500
+premises, extracted from the split it was fine-tuned on).
+
+**It is not two populations.** Pooled across both benchmarks, at 17 exclusive wins per arm:
+
+| | problems | premises cited/proof | fraction unseen |
+|---|--:|--:|--:|
+| only SV | 17 | 11.7 | 0.418 |
+| only LI @50k | 17 | 7.3 | **0.449** |
+
+Difference **+0.0310**, permutation p = **0.7024**. Excluding tokens that are tactic syntax rather
+than citations moves it to +0.0419, p = 0.7151 — same answer. There is no enrichment to find.
+
+**The reason is in the levels, not the difference.** Every arm's proofs sit at a fraction-unseen of
+**0.43 against a base rate of 0.782** — the probability that an arbitrary corpus premise is one the
+retriever never trained on:
+
+| | none | SV | LI @50k | base rate |
+|---|--:|--:|--:|--:|
+| fraction of cited premises unseen | 0.426 | 0.427 | 0.434 | **0.782** |
+| enrichment toward the training distribution | 2.64× | 2.63× | 2.60× | 1× |
+
+The premises these benchmarks actually need are **2.6× concentrated** in the 21.8% of Mathlib the
+retriever trained on (3.2× under the tactic-syntax sensitivity). That is not a coincidence and it is
+not a flaw in the benchmarks: the retriever's training positives are the premises human Mathlib
+proofs cite, and benchmark proofs cite the same commonly-used lemmas. Retrieval here is running
+**in-distribution almost all of the time.**
+
+So the end-to-end tie is not evidence against the predecessor's finding — it is what that finding
+predicts once the deployment distribution is measured. LI's advantage is on novel premises; SV's is
+on familiar ones; these benchmarks are overwhelmingly familiar, so the regime where late interaction
+wins is barely exercised. **The practical statement is conditional: choose multi-vector retrieval
+when the premise distribution is genuinely novel relative to training, and standard Lean benchmarks
+are not that.**
+
+`results/exported/tables/novel_premise_*.json`.
+
+### T5. Equal counts, different theorems — and the ceiling exceeds the effect
 
 | benchmark | SV | LI @50k | LI-only | SV-only | SV ∪ LI |
 |---|--:|--:|--:|--:|--:|
@@ -266,7 +323,7 @@ The union is an oracle: it picks the winning retriever per problem, knowing the 
 ceiling, not a result — but it is the ceiling a fusion arm chases, and it needs no new retriever and
 no training. See [H4](#h4--the-two-architectures-are-complementary-so-fusion-should-beat-both).
 
-### T5. Where the searches actually die
+### T6. Where the searches actually die
 
 Every problem-arm's terminal status, from the run records:
 
@@ -293,7 +350,7 @@ FATE-M and 86 → 77 → 77 on ProofNet, with the LI arm lowest on FATE-M. Retri
 partly to give the model something to say at states where it would otherwise fall silent, which is the
 same story the root-state log-probabilities tell from the other direction.
 
-### T6. Cost
+### T7. Cost
 
 LI's accuracy gap against SV is zero and its cost gap is not.
 
@@ -669,6 +726,20 @@ prompt-format finding.
 * Two Tier 1 arms were run per benchmark from a single job each, so there is **no seed replication**:
   the LLM samples at temperature 1.5 and a re-run would not reproduce the solved set exactly. The
   17/17 symmetry is one sample of a paired difference, not an average over seeds.
+* **The unseen-premise metric has three known weaknesses**, all reported rather than corrected.
+  Premise names are matched across two Mathlib versions (the predecessor traced commit `29dcec07`,
+  this project indexes v4.16.0), and **2,331 of 62,500 training premise names — 3.7% — have no
+  v4.16.0 equivalent**, so a renamed premise is misclassified as unseen. A citation is resolved by
+  name against the corpus, and an abbreviated name can denote several premises; the tie is broken
+  toward *seen*, which biases against the finding the analysis was looking for. And whether tactic
+  keywords count as citations changes the fraction materially (0.43 → 0.27); both settings are
+  reported and both give the same verdict on the contrast.
+* The unseen-premise contrast has 17 problems per arm even pooled. It can exclude a large enrichment,
+  not a small one; the levels it measures (2.6× in-distribution concentration) rest on all 130 solved
+  problems and are much better determined than the difference.
+* The local premise corpus used for that analysis has **276,108 names against the 276,070 the index
+  asserts**, a 0.014% difference that does not affect any reported figure but means the file is not
+  byte-identical to the one the arms were indexed over.
 * The depth-0 analysis paired 180 of 186 ProofNet problems. Four are the statements that do not
   elaborate under Lean v4.16.0 (`277`, `336`, `340`, `342`, with the elaboration errors recorded in the
   run files); two more produced no root expansion at all, and the exported records cannot say why
@@ -704,6 +775,28 @@ prompt-format finding.
 ## Next steps, as hypotheses
 
 Each step is stated as a claim that the experiment can falsify, with what each outcome would mean.
+
+The remaining work is sequenced into phases, cheapest and most decisive first. A phase is only
+started once its predecessor has landed, so the write-up is always complete at the last finished
+phase rather than half-finished across several.
+
+| phase | question | cost | status |
+|---|---|---|---|
+| **1** | Does LI win the problems needing premises it never trained on? ([H7](#h7--the-null-is-two-populations-cancelling-rather-than-noise--answered)) | analysis only, no GPU | ✅ **answered — no** |
+| **2** | Does the +0 survive re-sampling? ([H8](#h8--the-architecture-null-is-stable-under-re-sampling)) | ~16–20 GPU-h | not started |
+| **3** | Does LI pull ahead at wider search? ([H5](#h5--the-null-is-a-property-of-the-search-width-not-of-the-retrievers)) | ~16 GPU-h | not started |
+| **4** | Does the benchmark-dependence hold for an LLM? (miniF2F under Tier 1) | ~9 GPU-h | not started |
+| **5** | Does fusing the two rankings beat both? ([H4](#h4--the-two-architectures-are-complementary-so-fusion-should-beat-both)) | ½ day + 8 GPU-h | not started |
+
+Phase 2 is placed before the more interesting phases deliberately. The central result is a **null**,
+and the one thing a null cannot survive without is a measure of its own variance — see
+[H8](#h8--the-architecture-null-is-stable-under-re-sampling).
+
+Deferred rather than sequenced: **Track B** ([H6](#h6--a-retriever-agnostic-generator-removes-the-last-confound))
+and PutnamBench. Both are in the original plan and both are now poor value. Track B adds the training
+confound the frozen-model design exists to avoid; PutnamBench cannot discriminate between retrievers
+at this scale — the plan conceded that before any of this ran, and a 7B at 1/4,000 budget would land
+near ReProver's zero.
 
 ### H1 — LI lost to its candidate generator, not to late interaction ✅ ANSWERED
 
@@ -879,6 +972,59 @@ top-k lists. One run per benchmark, no new retriever, no training. Outcomes:
   latency plus LI's.
 * **Fusion matches the better arm** → the disagreement is noise in the search rather than a
   difference in retrieval quality, which would sharpen the null considerably.
+
+### H7 — the null is two populations cancelling rather than noise ✅ ANSWERED
+
+> **Claim.** The predecessor study measured LI winning on *novel* premises and SV winning
+> in-distribution. If that ordering survives into proving, LI's 17 exclusive wins are the problems
+> whose proofs need premises the retriever never trained on and SV's 17 are the problems needing
+> premises it did — so +0 is a cancellation, not an absence.
+
+**Ruled out, and the reason is more useful than the claim would have been.** The three outcomes were
+written down before running it:
+
+| outcome | reading | status |
+|---|---|---|
+| LI's wins enriched for unseen premises | the null is two populations; the predecessor's claim survives end to end | ❌ ruled out (+0.031, p = 0.70) |
+| no enrichment, and proofs *do* need novel premises | LI's robustness advantage genuinely fails to transfer | ❌ ruled out (proofs are 2.6× in-distribution) |
+| no enrichment because proofs rarely need novel premises | the regime LI wins in is barely exercised; the null is conditional, not general | ✅ **this one** |
+
+See [T4](#t4-why-the-predecessors-robustness-advantage-does-not-transfer). The conclusion is
+conditional rather than negative: late interaction is not shown to be useless, it is shown to be
+**unexercised** on these benchmarks, which is a claim about the evaluation distribution and not about
+the architecture.
+
+**What would exercise it.** A benchmark whose proofs cite premises outside the retriever's training
+distribution — deliberately constructed by holding out a Mathlib area from the retriever's training
+set and evaluating on theorems from it, which is the `novel_premises` design applied end to end
+rather than at the retrieval level. That is a data-construction task, not a compute task, and it is
+the experiment this project would run next given more than six weeks.
+
+### H8 — the architecture null is stable under re-sampling
+
+> **Claim.** The 17/17 split is a property of the two retrievers, not of one sample. Re-running both
+> arms with fresh sampling reproduces Δ ≈ 0 within noise, and the standard deviation of the LI−SV
+> difference is small relative to the +14 that retrieval itself buys.
+
+**This is the weakest point in the current evidence and it is the reason Phase 2 comes before the
+more interesting phases.** Tier 1 ran *one* pass per arm at `temperature 1.5` with sampling
+deliberately unseeded (`--sampling-seed` is off by default so pass@k stays honest). Every paired test
+reported above treats a problem's outcome as fixed given its arm — and for a temperature-1.5 language
+model it is not. The 17/17 symmetry is one draw from a distribution whose spread has never been
+measured.
+
+**Test.** Re-run `sv` and `li` on both benchmarks twice more, changing nothing but the sampling
+draw — 8 runs, ~16–20 GPU-hours — and report the LI−SV difference as a mean and standard deviation
+over three independent samples rather than a single number. Outcomes:
+
+* **|Δ| stays small across all three draws** → the null is a property of the retrievers and the
+  headline stands, now with an error bar instead of an assumption.
+* **Δ swings by more than a few problems** → the single-sample paired tests overstate their own
+  precision, and every Tier 1 contrast needs restating as a mean over draws. This would be an
+  uncomfortable finding and it is better found here than by an examiner.
+
+Nothing else in the write-up changes either way, which is exactly why it is worth doing first: it is
+the only phase that can *invalidate* a number already reported.
 
 ### H5 — the null is a property of the search width, not of the retrievers
 
@@ -1094,6 +1240,24 @@ is the bulk of `attempts.jsonl` and is stripped from the exported records. Its o
 (`results/exported/tables/root_quality_*.json`) ships so the numbers are auditable, but reproducing them from
 scratch means re-running the arms.
 
+**Unseen-premise stratification** — Phase 1, the test of whether the architecture null is two
+populations cancelling. Runs from the exported records, since it needs only each proof's text:
+
+```bash
+python scripts/novel_premise_stratification.py \
+    --seen-split <prooflens>/leandojo_data/leandojo_benchmark_4/novel_premises/train.json \
+    --corpus data/premises/mathlib_v4160.jsonl \
+    --run results/exported/logs/<fate_none> --run results/exported/logs/<fate_sv> \
+    --run results/exported/logs/<fate_li>   --run results/exported/logs/<pn_none> \
+    --run results/exported/logs/<pn_sv>     --run results/exported/logs/<pn_li>
+```
+
+Passing runs from both benchmarks pools them, namespacing problem ids by benchmark so the two cannot
+collide — the LI-vs-SV contrast has only 11 and 6 exclusive wins per arm separately, and pooling to 17
+is the difference between a test and a gesture. `--seen-split` is parsed once (365 MB, ~30 s) and
+cached; `--drop-tactic-words` gives the sensitivity. It needs the **predecessor repository's** LeanDojo
+split, which is the one input to any analysis here that this repo does not carry.
+
 To reproduce every published table from the exported records in this repo:
 
 ```bash
@@ -1104,7 +1268,7 @@ python scripts/build_table1.py --results-root results/exported/logs --policy rep
 ### Tests
 
 ```bash
-pytest tests/ -q -m "not lean"                                    # 598, hermetic
+pytest tests/ -q -m "not lean"                                    # 636, hermetic
 PROOFLENS_LEAN_PROJECT=~/lean/mathlib_v4160 pytest tests/ -q -m lean
 ```
 
@@ -1160,7 +1324,7 @@ src/prooflens_prover/
   utils/        seeding, logging, run manifests, io
 scripts/        extraction, index building, benchmarks, verification, analysis
 slurm/          cluster jobs
-tests/          598 hermetic + 9 live-Lean
+tests/          636 hermetic + 9 live-Lean
 results/        exported run records and tables
 ```
 
