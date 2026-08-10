@@ -76,7 +76,18 @@ def _lean_version() -> str:
 
 
 def _gpu_info() -> list[dict[str, Any]]:
-    """Per-device CUDA info, or [] on CPU-only hosts. Imports torch lazily."""
+    """Per-device CUDA info, or [] on CPU-only hosts. Imports torch lazily.
+
+    **Must not run before a process that will `fork` and use CUDA in the child.** Both
+    `torch.cuda.is_available()` and `get_device_properties` register PyTorch's `pthread_atfork`
+    handler, after which any forked child raises `Cannot re-initialize CUDA in forked subprocess`.
+    That cost a cluster round-trip when `utils.seed` made the same call; see the comment there.
+
+    Safe as currently called, because `RunManifest.create` runs *after* the vLLM engine is built and
+    the engine no longer forks (`prover.vllm_policy.ENGINE_ENV`). Anyone moving manifest creation
+    earlier in `scripts/prove_benchmark.py` needs to know this, which is why it is written down here
+    rather than left to be rediscovered.
+    """
     try:
         import torch
     except ImportError:

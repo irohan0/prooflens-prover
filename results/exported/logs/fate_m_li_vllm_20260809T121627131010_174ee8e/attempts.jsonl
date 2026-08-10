@@ -1,0 +1,5 @@
+{"problem_id": "1597", "source": "fate_m", "arm": "li", "status": "no_candidates", "proved": false, "proof": null, "n_expansions": 2, "n_tactics_tried": 16, "n_lean_calls": 16, "elapsed_s": 12.137, "limit_hit": null, "error": null}
+{"problem_id": "1082", "source": "fate_m", "arm": "li", "status": "no_candidates", "proved": false, "proof": null, "n_expansions": 1, "n_tactics_tried": 15, "n_lean_calls": 15, "elapsed_s": 4.253, "limit_hit": null, "error": null}
+{"problem_id": "2180", "source": "fate_m", "arm": "li", "status": "no_candidates", "proved": false, "proof": null, "n_expansions": 1, "n_tactics_tried": 16, "n_lean_calls": 16, "elapsed_s": 2.603, "limit_hit": null, "error": null}
+{"problem_id": "326", "source": "fate_m", "arm": "li", "status": "no_candidates", "proved": false, "proof": null, "n_expansions": 1, "n_tactics_tried": 5, "n_lean_calls": 5, "elapsed_s": 1.178, "limit_hit": null, "error": null}
+{"problem_id": "1755", "source": "fate_m", "arm": "li", "status": "no_candidates", "proved": false, "proof": null, "n_expansions": 1, "n_tactics_tried": 16, "n_lean_calls": 16, "elapsed_s": 2.838, "limit_hit": null, "error": null}

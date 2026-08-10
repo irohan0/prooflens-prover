@@ -366,3 +366,111 @@ class TestLockedSequenceLengths:
         # Guards against a future "simplification" that collapses them into one constant: they come
         # from different config keys and only the document side is tied to the stored index.
         assert LI_QUERY_LENGTH != LI_DOCUMENT_LENGTH
+
+
+class TestExactChunkedMatchesSingleShot:
+    """`exact_topk_chunked` is the ground truth the two-stage approximation is measured against.
+
+    If it differs from `topk(..., n_candidates=n_docs)` for any reason other than the candidate
+    restriction, that difference is reported as approximation loss that does not exist — and it
+    would be invisible, because both numbers look plausible. An earlier draft of
+    `scripts/measure_li_recall.py` reimplemented the chunked loop in the caller and skipped
+    `topk`'s query normalisation and tie-breaking, which is exactly this bug.
+    """
+
+    @pytest.mark.parametrize("chunk", [1, 2, 3, 7, 24, 25, 26, 1000])
+    def test_same_ranking_for_any_chunk_size(self, chunk):
+        """Ranking must be chunk-invariant. Scores need only agree to float32 precision.
+
+        Chunking changes the order BLAS accumulates the matmul, so scores differ in the last
+        bits (observed: 1.4285389 vs 1.4285390, ~1e-7 relative). That is inherent to floating
+        point, not a defect. What must not change is *which* premises are returned and in what
+        order — recall is computed over index sets, so that is what the measurement depends on.
+        """
+        idx = build_li(n_docs=25)
+        q = unit((4, DIM))
+        got = idx.exact_topk_chunked(q, k=6, chunk=chunk)
+        want = idx.topk(q, k=6, n_candidates=idx.n_docs)
+        assert [i for i, _ in got] == [i for i, _ in want]
+        np.testing.assert_allclose(
+            [s for _, s in got], [s for _, s in want], rtol=1e-5, atol=1e-5
+        )
+
+    def test_chunk_larger_than_corpus(self):
+        idx = build_li(n_docs=10)
+        q = unit((3, DIM))
+        # One chunk covering everything is the same computation, so this one IS bit-identical.
+        assert idx.exact_topk_chunked(q, k=5, chunk=10_000) == idx.topk(
+            q, k=5, n_candidates=idx.n_docs
+        )
+
+    def test_normalises_the_query_like_topk_does(self):
+        """A non-unit query must rank identically to its normalised form.
+
+        Skipping the normalisation that `topk` performs would silently score the two paths
+        differently. Compared the same way as `test_same_ranking_for_any_chunk_size`, and for the
+        same reason: dividing by 7.5 and then by the norm is a different float32 accumulation from
+        dividing by the norm alone, so the scores differ in the last bits (~1e-7). This test
+        asserted exact tuple equality and therefore failed whenever the unseeded random draw
+        happened to put two scores within rounding distance of each other — a flaky test, which is
+        worse than no test, because it makes a green suite stop meaning anything.
+        """
+        idx = build_li(n_docs=25)
+        q = unit((4, DIM))
+        got = idx.exact_topk_chunked(q * 7.5, k=6)
+        want = idx.exact_topk_chunked(q, k=6)
+        assert [i for i, _ in got] == [i for i, _ in want]
+        np.testing.assert_allclose(
+            [s for _, s in got], [s for _, s in want], rtol=1e-5, atol=1e-5
+        )
+
+    def test_accepts_a_one_dimensional_query(self):
+        idx = build_li(n_docs=25)
+        q = unit(DIM)
+        assert len(idx.exact_topk_chunked(q, k=5)) == 5
+
+    def test_k_beyond_corpus_size_is_clamped(self):
+        idx = build_li(n_docs=8)
+        assert len(idx.exact_topk_chunked(unit((3, DIM)), k=99)) == 8
+
+    def test_k_zero(self):
+        assert build_li(n_docs=8).exact_topk_chunked(unit((3, DIM)), k=0) == []
+
+    def test_scores_are_descending(self):
+        hits = build_li(n_docs=40).exact_topk_chunked(unit((4, DIM)), k=10, chunk=7)
+        assert [s for _, s in hits] == sorted((s for _, s in hits), reverse=True)
+
+    def test_matches_the_reference_maxsim_definition(self):
+        # Ties the chunked path back to the one-document-at-a-time definition of ColBERT MaxSim,
+        # not merely to another implementation in this file.
+        idx = build_li(n_docs=30)
+        q = unit((4, DIM))
+        best = sorted(
+            ((maxsim_score(q, idx.doc_tokens(i)), i) for i in range(idx.n_docs)), reverse=True
+        )[:5]
+        got = idx.exact_topk_chunked(q, k=5, chunk=6)
+        assert [i for _, i in best] == [i for i, _ in got]
+
+
+class TestRecallMeasurement:
+    def test_recall_is_one_when_the_budget_covers_the_corpus(self):
+        idx = build_li(n_docs=30)
+        qs = [unit((4, DIM)) for _ in range(5)]
+        assert idx.recall_at_k_vs_exact(qs, k=5, n_candidates=idx.n_docs) == 1.0
+
+    def test_a_tiny_budget_loses_recall(self):
+        # The property the whole diagnostic rests on: restricting candidates must be *measurable*.
+        idx = build_li(n_docs=200, n_candidates=3)
+        qs = [unit((4, DIM)) for _ in range(10)]
+        assert idx.recall_at_k_vs_exact(qs, k=10, n_candidates=3) < 1.0
+
+    def test_larger_budgets_do_not_reduce_recall(self):
+        # Monotonicity: a bigger first stage is a superset, so recall cannot fall. If this fails the
+        # candidate selection is not a nested top-n and the sweep would be uninterpretable.
+        idx = build_li(n_docs=300)
+        qs = [unit((4, DIM)) for _ in range(8)]
+        rs = [idx.recall_at_k_vs_exact(qs, k=10, n_candidates=b) for b in (5, 25, 100, 300)]
+        assert rs == sorted(rs), f"recall not monotone in n_candidates: {rs}"
+
+    def test_empty_query_list(self):
+        assert build_li().recall_at_k_vs_exact([], k=5) == 1.0

@@ -96,5 +96,18 @@ fi
 # Written last, so its presence means the copy finished. Contents are the source size, so a source
 # that changed since staging invalidates the cache.
 echo "$need_kb" > "$MARKER"
-log "staged in $(( SECONDS - t0 ))s"
+took=$(( SECONDS - t0 ))
+log "staged in ${took}s"
+
+# Staging is an optimisation and it can lose. It buys ~500 s per `import Mathlib` (439-691 s from
+# NFS against 158 s node-local), and a run pays that import a handful of times — once for the header
+# plus once per REPL restart. Measured staging times on this cluster range from a few minutes to
+# 2624 s, entirely depending on NFS contention, so the trade is decided by the day rather than by
+# the design. Say so when it clearly went badly: a short run would have finished sooner without it.
+if [ "$took" -gt 900 ]; then
+    log "WARNING: staging cost ${took}s, more than the ~500s it saves per Mathlib import."
+    log "         For a short run (a smoke test, or --limit under ~20) pass STAGE_LEAN=0 and read"
+    log "         Mathlib from NFS instead. For a full benchmark it still pays off, because olean"
+    log "         reads continue during elaboration, not only at import."
+fi
 echo "$DEST"

@@ -1,0 +1,420 @@
+{
+  "comparisons": [
+    {
+      "primary": {
+        "benchmark": "fate_m",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "n_candidates": null,
+          "proved": 39
+        },
+        "treatment": {
+          "arm": "li",
+          "label": "li@50k",
+          "run_id": "fate_m_li_vllm_20260809T151828316972_8175a00",
+          "n_candidates": 50000,
+          "proved": 46
+        },
+        "n_problems": 141,
+        "excluded_harness_errors": false,
+        "delta_problems": 7,
+        "delta_rate": 0.04964539007092199,
+        "only_treatment": [
+          "1108",
+          "1144",
+          "1569",
+          "1581",
+          "1595",
+          "2180",
+          "326",
+          "336",
+          "378",
+          "384",
+          "436",
+          "713",
+          "7533"
+        ],
+        "only_baseline": [
+          "1336",
+          "1597",
+          "205",
+          "424",
+          "4649",
+          "7415"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 33,
+        "n_union": 52,
+        "union_rate": 0.36879432624113473,
+        "union_gain_over_best": 6,
+        "ci95": [
+          -0.0070921985815602835,
+          0.10638297872340426
+        ],
+        "p_permutation": 0.1628837116288371,
+        "p_mcnemar_exact": 0.1670684814453125,
+        "significant": false,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      },
+      "sensitivity": {
+        "benchmark": "fate_m",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "n_candidates": null,
+          "proved": 39
+        },
+        "treatment": {
+          "arm": "li",
+          "label": "li@50k",
+          "run_id": "fate_m_li_vllm_20260809T151828316972_8175a00",
+          "n_candidates": 50000,
+          "proved": 46
+        },
+        "n_problems": 140,
+        "excluded_harness_errors": true,
+        "delta_problems": 7,
+        "delta_rate": 0.05,
+        "only_treatment": [
+          "1108",
+          "1144",
+          "1569",
+          "1581",
+          "1595",
+          "2180",
+          "326",
+          "336",
+          "378",
+          "384",
+          "436",
+          "713",
+          "7533"
+        ],
+        "only_baseline": [
+          "1336",
+          "1597",
+          "205",
+          "424",
+          "4649",
+          "7415"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 33,
+        "n_union": 52,
+        "union_rate": 0.37142857142857144,
+        "union_gain_over_best": 6,
+        "ci95": [
+          -0.007142857142857143,
+          0.11428571428571428
+        ],
+        "p_permutation": 0.17078292170782922,
+        "p_mcnemar_exact": 0.1670684814453125,
+        "significant": false,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      }
+    },
+    {
+      "primary": {
+        "benchmark": "proofnet_test",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "proofnet_test_none_vllm_20260809T200647051581_badc9e4",
+          "n_candidates": null,
+          "proved": 19
+        },
+        "treatment": {
+          "arm": "li",
+          "label": "li@50k",
+          "run_id": "proofnet_test_li_vllm_20260809T200647071567_badc9e4",
+          "n_candidates": 50000,
+          "proved": 26
+        },
+        "n_problems": 186,
+        "excluded_harness_errors": false,
+        "delta_problems": 7,
+        "delta_rate": 0.03763440860215054,
+        "only_treatment": [
+          "210",
+          "262",
+          "283",
+          "289",
+          "294",
+          "295",
+          "307",
+          "332"
+        ],
+        "only_baseline": [
+          "197"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 18,
+        "n_union": 27,
+        "union_rate": 0.14516129032258066,
+        "union_gain_over_best": 1,
+        "ci95": [
+          0.010752688172043012,
+          0.06989247311827956
+        ],
+        "p_permutation": 0.03849615038496151,
+        "p_mcnemar_exact": 0.0390625,
+        "significant": true,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      },
+      "sensitivity": {
+        "benchmark": "proofnet_test",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "proofnet_test_none_vllm_20260809T200647051581_badc9e4",
+          "n_candidates": null,
+          "proved": 19
+        },
+        "treatment": {
+          "arm": "li",
+          "label": "li@50k",
+          "run_id": "proofnet_test_li_vllm_20260809T200647071567_badc9e4",
+          "n_candidates": 50000,
+          "proved": 26
+        },
+        "n_problems": 179,
+        "excluded_harness_errors": true,
+        "delta_problems": 7,
+        "delta_rate": 0.03910614525139665,
+        "only_treatment": [
+          "210",
+          "262",
+          "283",
+          "289",
+          "294",
+          "295",
+          "307",
+          "332"
+        ],
+        "only_baseline": [
+          "197"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 18,
+        "n_union": 27,
+        "union_rate": 0.15083798882681565,
+        "union_gain_over_best": 1,
+        "ci95": [
+          0.0111731843575419,
+          0.07262569832402235
+        ],
+        "p_permutation": 0.039896010398960104,
+        "p_mcnemar_exact": 0.0390625,
+        "significant": true,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      }
+    }
+  ],
+  "pooled": {
+    "primary": {
+      "benchmarks": [
+        "fate_m",
+        "proofnet_test"
+      ],
+      "baseline": {
+        "arm": "none",
+        "label": "none",
+        "n_candidates": null,
+        "run_ids": [
+          "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "proofnet_test_none_vllm_20260809T200647051581_badc9e4"
+        ]
+      },
+      "treatment": {
+        "arm": "li",
+        "label": "li@50k",
+        "n_candidates": 50000,
+        "run_ids": [
+          "fate_m_li_vllm_20260809T151828316972_8175a00",
+          "proofnet_test_li_vllm_20260809T200647071567_badc9e4"
+        ]
+      },
+      "n_problems": 327,
+      "excluded_harness_errors": false,
+      "delta_problems": 14,
+      "delta_rate": 0.04281345565749235,
+      "only_treatment": [
+        "fate_m:1108",
+        "fate_m:1144",
+        "fate_m:1569",
+        "fate_m:1581",
+        "fate_m:1595",
+        "fate_m:2180",
+        "fate_m:326",
+        "fate_m:336",
+        "fate_m:378",
+        "fate_m:384",
+        "fate_m:436",
+        "fate_m:713",
+        "fate_m:7533",
+        "proofnet_test:210",
+        "proofnet_test:262",
+        "proofnet_test:283",
+        "proofnet_test:289",
+        "proofnet_test:294",
+        "proofnet_test:295",
+        "proofnet_test:307",
+        "proofnet_test:332"
+      ],
+      "only_baseline": [
+        "fate_m:1336",
+        "fate_m:1597",
+        "fate_m:205",
+        "fate_m:424",
+        "fate_m:4649",
+        "fate_m:7415",
+        "proofnet_test:197"
+      ],
+      "ci95": [
+        0.012232415902140673,
+        0.0764525993883792
+      ],
+      "p_permutation": 0.012398760123987601,
+      "p_mcnemar_exact": 0.012540951371192932,
+      "significant": true,
+      "borderline": false,
+      "heterogeneous": false,
+      "per_benchmark": [
+        {
+          "benchmark": "fate_m",
+          "n_problems": 141,
+          "baseline_proved": 39,
+          "treatment_proved": 46,
+          "delta_problems": 7,
+          "delta_rate": 0.04964539007092199,
+          "p_mcnemar_exact": 0.1670684814453125,
+          "significant": false
+        },
+        {
+          "benchmark": "proofnet_test",
+          "n_problems": 186,
+          "baseline_proved": 19,
+          "treatment_proved": 26,
+          "delta_problems": 7,
+          "delta_rate": 0.03763440860215054,
+          "p_mcnemar_exact": 0.0390625,
+          "significant": true
+        }
+      ]
+    },
+    "sensitivity": {
+      "benchmarks": [
+        "fate_m",
+        "proofnet_test"
+      ],
+      "baseline": {
+        "arm": "none",
+        "label": "none",
+        "n_candidates": null,
+        "run_ids": [
+          "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "proofnet_test_none_vllm_20260809T200647051581_badc9e4"
+        ]
+      },
+      "treatment": {
+        "arm": "li",
+        "label": "li@50k",
+        "n_candidates": 50000,
+        "run_ids": [
+          "fate_m_li_vllm_20260809T151828316972_8175a00",
+          "proofnet_test_li_vllm_20260809T200647071567_badc9e4"
+        ]
+      },
+      "n_problems": 319,
+      "excluded_harness_errors": true,
+      "delta_problems": 14,
+      "delta_rate": 0.0438871473354232,
+      "only_treatment": [
+        "fate_m:1108",
+        "fate_m:1144",
+        "fate_m:1569",
+        "fate_m:1581",
+        "fate_m:1595",
+        "fate_m:2180",
+        "fate_m:326",
+        "fate_m:336",
+        "fate_m:378",
+        "fate_m:384",
+        "fate_m:436",
+        "fate_m:713",
+        "fate_m:7533",
+        "proofnet_test:210",
+        "proofnet_test:262",
+        "proofnet_test:283",
+        "proofnet_test:289",
+        "proofnet_test:294",
+        "proofnet_test:295",
+        "proofnet_test:307",
+        "proofnet_test:332"
+      ],
+      "only_baseline": [
+        "fate_m:1336",
+        "fate_m:1597",
+        "fate_m:205",
+        "fate_m:424",
+        "fate_m:4649",
+        "fate_m:7415",
+        "proofnet_test:197"
+      ],
+      "ci95": [
+        0.012539184952978056,
+        0.07523510971786834
+      ],
+      "p_permutation": 0.013498650134986502,
+      "p_mcnemar_exact": 0.012540951371192932,
+      "significant": true,
+      "borderline": false,
+      "heterogeneous": false,
+      "per_benchmark": [
+        {
+          "benchmark": "fate_m",
+          "n_problems": 140,
+          "baseline_proved": 39,
+          "treatment_proved": 46,
+          "delta_problems": 7,
+          "delta_rate": 0.05,
+          "p_mcnemar_exact": 0.1670684814453125,
+          "significant": false
+        },
+        {
+          "benchmark": "proofnet_test",
+          "n_problems": 179,
+          "baseline_proved": 19,
+          "treatment_proved": 26,
+          "delta_problems": 7,
+          "delta_rate": 0.03910614525139665,
+          "p_mcnemar_exact": 0.0390625,
+          "significant": true
+        }
+      ]
+    }
+  }
+}

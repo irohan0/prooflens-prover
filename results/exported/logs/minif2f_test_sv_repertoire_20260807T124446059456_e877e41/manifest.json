@@ -1,0 +1,87 @@
+{
+  "run_id": "minif2f_test_sv_repertoire_20260807T124446059456_e877e41",
+  "name": "minif2f_test_sv_repertoire",
+  "seed": 0,
+  "git_commit": "e877e41",
+  "started_utc": "2026-08-07T12:44:46.059456+00:00",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Linux-5.14.0-611.24.1.el9_7.x86_64-x86_64-with-glibc2.34",
+    "hostname": "node849.csf3.man.alces.network",
+    "cpu_count": 48,
+    "packages": {
+      "torch": "2.11.0",
+      "transformers": "5.3.0",
+      "accelerate": "1.14.0",
+      "datasets": "5.0.1",
+      "pylate": "1.6.0",
+      "lean-interact": "0.11.5",
+      "numpy": "2.4.6"
+    },
+    "gpus": [
+      {
+        "name": "NVIDIA A100-SXM4-80GB",
+        "total_memory_gb": 79.25,
+        "capability": "8.0"
+      }
+    ],
+    "slurm": {
+      "SLURM_CPUS_ON_NODE": "8",
+      "SLURM_JOB_PARTITION": "gpuA",
+      "SLURM_JOB_ID": "18309584",
+      "SLURM_JOB_NAME": "pl_prove",
+      "SLURM_JOB_NODELIST": "node849"
+    },
+    "lean": "Lean (version 4.32.2, x86_64-unknown-linux-gnu, commit f3b06c705e6c85f5314019d5d3baab0fec5b580c, Release)"
+  },
+  "config": {
+    "benchmark": "minif2f_test",
+    "arm": "sv",
+    "policy": "repertoire+sv",
+    "top_k": 10,
+    "min_closers": 19,
+    "index": "data/index/sv_ft_novel_lr3e6",
+    "corpus_id": "276070:31db61c63a9b7ee1",
+    "encoder": {
+      "kind": "sv",
+      "checkpoint": "/mnt/iusers01/fse-ugpgt01/mace01/n80967ri/scratch/prooflens/checkpoints/sv_ft_novel_lr3e6",
+      "base_model": "Alibaba-NLP/gte-modernbert-base",
+      "dim": 768,
+      "seed_tag": ""
+    },
+    "retriever_runtime": {
+      "max_seq_length": 512
+    },
+    "n_candidates": null,
+    "n_problems": 244,
+    "offset": 0,
+    "search": {
+      "max_expansions": 64,
+      "samples_per_step": 32,
+      "max_depth": 32,
+      "wall_clock_s": 600.0,
+      "tactic_timeout": 60.0,
+      "length_penalty": 0.5,
+      "dedupe_states": true
+    },
+    "lean_project": "/tmp/slurm.18309584/prooflens_lean/mathlib_v4160",
+    "lean_version": null
+  },
+  "outcome": {
+    "finished_utc": "2026-08-07T15:15:46.201594+00:00",
+    "n_problems": 244,
+    "n_proved": 77,
+    "pass_rate": 0.3156,
+    "elapsed_s": 9049.4,
+    "n_this_session": 244,
+    "n_resumed": 0,
+    "n_error": 5,
+    "n_stale_env_recoveries": 5,
+    "retrieval": {
+      "n_queries": 5315,
+      "total_latency_s": 212.718,
+      "mean_latency_ms": 40.02,
+      "mean_premises_returned": 10.0
+    }
+  }
+}

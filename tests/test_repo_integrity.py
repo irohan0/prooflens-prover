@@ -153,3 +153,145 @@ class TestGitignoreSyntax:
                 f"`!{pattern}` does not re-include anything — {rel} is still ignored. "
                 "A negation that matches nothing is worse than no rule: it reads as protection."
             )
+
+
+class TestNonAsciiOutputIsSafe:
+    """A script must not be able to die on its own output after the work is finished.
+
+    Nearly every script here prints an em-dash or a Δ, and `prove_benchmark.py` prints Lean goals
+    full of `α`/`⊢`. Python takes the stdout encoding from the locale, so under a POSIX or `cp1252`
+    locale `print()` raises `UnicodeEncodeError` — after the results are on disk, with a non-zero
+    exit status that stops anything chained with `&&`. This project has already lost one debugging
+    cycle to an encoding traceback hidden in a separate stderr stream.
+
+    Static, because the alternative — re-running each script under a non-UTF-8 locale — needs the
+    cluster's data. Static is enough: the failure mode is a *missing* call, not a subtle one.
+    """
+
+    @staticmethod
+    def _prints(text: str) -> list[str]:
+        import re
+
+        return re.findall(r"print\((?:[^()]|\([^()]*\))*\)", text, flags=re.S)
+
+    @pytest.mark.parametrize(
+        "script",
+        sorted(p.name for p in (REPO_ROOT / "scripts").glob("*.py")),
+    )
+    def test_script_printing_non_ascii_forces_utf8(self, script):
+        text = (REPO_ROOT / "scripts" / script).read_text(encoding="utf-8")
+        offenders = [s for s in self._prints(text) if any(ord(c) > 127 for c in s)]
+        if not offenders:
+            return
+        assert "ensure_utf8_output()" in text, (
+            f"scripts/{script} prints non-ASCII ({offenders[0][:60]!r}...) but never calls "
+            "ensure_utf8_output(); it will raise UnicodeEncodeError under a non-UTF-8 locale, "
+            "after doing all of its work"
+        )
+
+    def test_the_helper_is_idempotent_and_survives_a_stream_without_reconfigure(self):
+        from prooflens_prover.utils.logging import ensure_utf8_output
+
+        # Called twice, and under pytest's capture objects (which have no `reconfigure`). Neither
+        # may raise: a hardening helper that itself throws is worse than the problem.
+        ensure_utf8_output()
+        ensure_utf8_output()
+
+
+class TestScriptsRunFromAFreshClone:
+    """`python scripts/<x>.py` must work with no install and no exported PYTHONPATH.
+
+    The sbatch files export `PYTHONPATH="$REPO/src"`, so cluster *jobs* were always fine. The
+    analysis scripts, though, get run by hand on a login node — and there `build_table1.py` died
+    with `ModuleNotFoundError: No module named 'prooflens_prover'` in the middle of collecting
+    results. Second time this class of friction cost a round trip; the first was an
+    `export_results.py` invoked from the wrong directory.
+
+    The README's claim is that a clone reproduces the results. A clone that needs an undocumented
+    environment variable does not.
+    """
+
+    SCRIPTS = sorted(p.name for p in (REPO_ROOT / "scripts").glob("*.py"))
+
+    @pytest.mark.parametrize("script", SCRIPTS)
+    def test_package_import_is_preceded_by_a_path_bootstrap(self, script):
+        text = (REPO_ROOT / "scripts" / script).read_text(encoding="utf-8")
+        if "from prooflens_prover" not in text:
+            return                              # standalone by design, e.g. export_results.py
+        assert "sys.path.insert" in text, (
+            f"scripts/{script} imports prooflens_prover but never puts src/ on sys.path; it only "
+            "runs where PYTHONPATH happens to be set"
+        )
+        assert text.index("sys.path.insert") < text.index("from prooflens_prover"), (
+            f"scripts/{script} inserts src/ on sys.path *after* importing the package — the import "
+            "has already failed by then"
+        )
+
+    def test_the_bootstrap_actually_works(self, tmp_path):
+        """One end-to-end proof the mechanism is real, not just present.
+
+        `build_table1.py` because it is the script that failed and the only analysis script with no
+        torch import, so this stays fast. PYTHONPATH is cleared and the cwd is elsewhere.
+        """
+        import os
+        import subprocess
+        import sys
+
+        env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+        p = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts" / "build_table1.py"), "--help"],
+            capture_output=True, text=True, env=env, cwd=tmp_path,
+        )
+        assert p.returncode == 0, f"stdout={p.stdout}\nstderr={p.stderr}"
+        assert "ModuleNotFoundError" not in p.stderr
+
+
+class TestPublishAllowlist:
+    """`publish.sh` mirrors a filtered tree to a private GitHub repo a supervisor reads.
+
+    It is an allowlist so that a working-notes file added later defaults to *not* published. The
+    inverse default has already failed on this project: `.gitignore` silently excluded
+    `src/prooflens_prover/data/` for four commits, and the working copy looked correct throughout.
+
+    The invariant worth testing statically is that the allowlist cannot sweep in something the
+    forbidden list is meant to stop. `publish.sh` re-checks at run time and refuses to push, but by
+    then the tree is built and the failure is confusing.
+    """
+
+    @staticmethod
+    def _array(name: str) -> list[str]:
+        import re
+
+        src = (REPO_ROOT / "publish.sh").read_text(encoding="utf-8")
+        body = re.search(rf"^{name}=\((.*?)^\)", src, flags=re.S | re.M)
+        assert body, f"{name}=( ... ) not found in publish.sh"
+        return [w.strip().strip("'\"") for w in body.group(1).split() if not w.startswith("#")]
+
+    def test_no_allowlisted_path_contains_a_forbidden_one(self):
+        allowed = self._array("PATHS")
+        forbidden = self._array("FORBIDDEN")
+        clashes = [
+            (a, f) for a in allowed for f in forbidden
+            if f == a or f.startswith(a.rstrip("/") + "/")
+        ]
+        assert not clashes, (
+            f"publish.sh would copy a forbidden path: {clashes}. Narrow the allowlisted entry — "
+            "`results/exported` rather than `results`, for example."
+        )
+
+    def test_every_allowlisted_path_exists(self):
+        missing = [p for p in self._array("PATHS") if not (REPO_ROOT / p).exists()]
+        assert not missing, f"publish.sh allowlists paths that do not exist: {missing}"
+
+    def test_working_notes_are_forbidden(self):
+        """Named explicitly, because these are the files whose leak would matter."""
+        forbidden = set(self._array("FORBIDDEN"))
+        for f in ("CLAUDE.md", ".claude", "LEARNINGS.md", "MEETING_SCRIPT.md", "PLAN.md"):
+            assert f in forbidden, f"{f} is not in publish.sh's FORBIDDEN list"
+
+    def test_root_markdown_other_than_readme_is_never_allowlisted(self):
+        allowed = self._array("PATHS")
+        stray = [p for p in allowed if p.endswith(".md") and p != "README.md"]
+        assert not stray, (
+            f"publish.sh allowlists a root markdown file other than README.md: {stray}"
+        )

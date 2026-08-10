@@ -317,21 +317,68 @@ class LateInteractionIndex:
         top = top[np.lexsort((cand[top], -scores[top]))]
         return [(int(cand[j]), float(scores[j])) for j in top]
 
+    def exact_topk_chunked(
+        self,
+        query_emb: np.ndarray,
+        k: int = DEFAULT_TOP_K,
+        weights: np.ndarray | None = None,
+        chunk: int = 10_000,
+    ) -> list[tuple[int, float]]:
+        """Exact full-corpus MaxSim top-`k`, scored in chunks so it fits in memory.
+
+        `topk(..., n_candidates=n_docs)` computes the same thing in one shot, but at full corpus
+        scale that materialises a `[n_query_tokens x n_corpus_tokens]` score matrix — 384 x 21.7M
+        floats, 33 GB — plus an 11 GB float32 gather. This scores `chunk` premises at a time
+        instead, so peak memory is set by `chunk` rather than by the corpus.
+
+        **Query preprocessing and tie-breaking are deliberately identical to `topk`.** They have to
+        be: this is the ground truth that `topk`'s approximation is measured against, so any
+        difference between the two paths that is *not* the candidate restriction would show up as
+        approximation loss that does not exist. Reimplementing the preprocessing in a caller is how
+        that happens, and it nearly did.
+        """
+        if k <= 0 or self.n_docs == 0:
+            return []
+        q = l2_normalise(np.asarray(query_emb, dtype=np.float32))
+        if q.ndim == 1:
+            q = q[None, :]
+
+        scores = np.empty(self.n_docs, dtype=np.float32)
+        for lo in range(0, self.n_docs, chunk):
+            sel = np.arange(lo, min(lo + chunk, self.n_docs))
+            scores[lo:lo + len(sel)] = self.maxsim_over(q, sel, weights)
+
+        k = min(k, self.n_docs)
+        top = np.argpartition(-scores, k - 1)[:k] if k < self.n_docs else np.arange(self.n_docs)
+        top = top[np.lexsort((top, -scores[top]))]
+        return [(int(i), float(scores[i])) for i in top]
+
     def recall_at_k_vs_exact(
-        self, query_embs: list[np.ndarray], k: int = DEFAULT_TOP_K
+        self,
+        query_embs: list[np.ndarray],
+        k: int = DEFAULT_TOP_K,
+        n_candidates: int | None = None,
+        chunk: int = 10_000,
     ) -> float:
         """Fraction of the exact full-corpus top-`k` that the two-stage path also returns.
 
         The honest measurement of what the approximation costs. Report it beside any LI result:
         without it, "LI scores X" is a claim about an unspecified retriever.
+
+        **What you pass as `query_embs` decides what this measures**, and getting that wrong is not
+        detectable from the output. Passing premise embeddings (`doc_tokens(i)`) measures a
+        premise retrieving its neighbours — a probe from the same distribution as the corpus, which
+        the mean-pooled first stage handles easily. Passing encoded *proof states* measures the
+        retrieval the prover actually performs. The index build reports the former and it read
+        0.992; the latter bears on any arm comparison. See `scripts/measure_li_recall.py`.
         """
         if not query_embs:
             return 1.0
         hits = 0
         total = 0
         for q in query_embs:
-            approx = {i for i, _ in self.topk(q, k=k)}
-            exact = {i for i, _ in self.topk(q, k=k, n_candidates=self.n_docs)}
+            approx = {i for i, _ in self.topk(q, k=k, n_candidates=n_candidates)}
+            exact = {i for i, _ in self.exact_topk_chunked(q, k=k, chunk=chunk)}
             hits += len(approx & exact)
             total += len(exact)
         return hits / max(total, 1)

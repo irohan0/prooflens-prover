@@ -74,6 +74,12 @@ src = ["src", "tests", "scripts"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+# Every script puts `src/` on `sys.path` before importing the package, so that `python
+# scripts/build_table1.py` works in a fresh clone with no install and no exported PYTHONPATH.
+# That is necessarily executable code above the package imports, which is what E402 flags.
+"scripts/*.py" = ["E402"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

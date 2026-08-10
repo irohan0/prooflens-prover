@@ -34,11 +34,39 @@ from prooflens_prover.prover.repertoire import DEFAULT_CLOSERS
 HARNESS_ERROR_STATUSES = frozenset({"error"})
 
 
+def format_budget(n: int | None) -> str:
+    """Render a first-stage candidate budget compactly: 1000 -> `1k`, 50000 -> `50k`.
+
+    `None` renders as `?` rather than being assumed to be the index's stored 1,000. Filling in an
+    unrecorded number is how the 0.443-recall runs came to look interchangeable with the corrected
+    ones.
+    """
+    if n is None:
+        return "?"
+    return f"{n // 1000}k" if n >= 1000 and n % 1000 == 0 else str(n)
+
+
+#: Policies whose proof text can be attributed to retrieval by inspection alone.
+#:
+#: **Only the model-free one.** `is_premise_tactic` is exact for `RepertoirePolicy` because that
+#: policy emits either a `DEFAULT_CLOSERS` key verbatim or a template rendered with a premise name,
+#: and those two sets are disjoint. For a language model the same test is *vacuous*: `intro x`,
+#: `ring_nf` and `linarith` are all "not a closer" too, so every tactic it writes counts as naming a
+#: premise, and the metric reports 100% regardless of whether retrieval contributed anything.
+#:
+#: That is not a hypothetical. It was reported as "100% of the 13 problems only li solved name a
+#: retrieved premise" and offered as causal evidence, from exactly this vacuous test — the same
+#: mistake, in the same file, as the eyeballed 73% utilisation this module's docstring was written
+#: to prevent. Attributing an LLM's proof to retrieval needs the premises that were actually offered
+#: for each state, which the trace does not record; until it does, the honest answer is `None`.
+PREMISE_ATTRIBUTABLE_POLICIES = frozenset({"repertoire"})
+
+
 def is_premise_tactic(tactic: str) -> bool:
     """True if `tactic` names a retrieved premise rather than being a bare repertoire closer.
 
-    Exact, not a heuristic: `RepertoirePolicy` emits either a key of `DEFAULT_CLOSERS` verbatim or a
-    template rendered with a premise name, and those sets are disjoint.
+    Exact for `RepertoirePolicy`, and **only** for it — see `PREMISE_ATTRIBUTABLE_POLICIES`. Callers
+    must check `Arm.premise_attribution_available` before using this on a run's proofs.
     """
     return tactic.strip() not in DEFAULT_CLOSERS
 
@@ -50,6 +78,15 @@ class Arm:
     run_id: str
     benchmark: str
     arm: str
+    #: li only: the first-stage candidate budget this run actually used, as recorded by the run
+    #: itself. Two li runs differing in this are NOT the same experiment — at 1,000 the pooled
+    #: first stage retained only 0.443 of its own exact top-10 — so anything that renders an li
+    #: number has to be able to say which budget produced it. `None` for arms without a first
+    #: stage, and for li runs predating the field.
+    n_candidates: int | None = None
+    #: Which generator produced these proofs. Decides whether premise attribution is measurable at
+    #: all; see `PREMISE_ATTRIBUTABLE_POLICIES`. Runs predating the field were all model-free.
+    policy_kind: str = "repertoire"
     proved: dict[str, bool] = field(default_factory=dict)
     status: dict[str, str] = field(default_factory=dict)
     proof: dict[str, list[str]] = field(default_factory=dict)
@@ -63,6 +100,9 @@ class Arm:
             run_id=manifest["run_id"],
             benchmark=cfg.get("benchmark", "?"),
             arm=cfg.get("arm", "?"),
+            n_candidates=cfg.get("n_candidates"),
+            # Absent means the run predates the field, and every such run used the repertoire.
+            policy_kind=cfg.get("policy_kind") or "repertoire",
         )
         for line in (d / "attempts.jsonl").read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -78,8 +118,30 @@ class Arm:
     def n_proved(self) -> int:
         return sum(self.proved.values())
 
-    def premise_using(self) -> set[str]:
-        """Problems whose proof names at least one retrieved premise."""
+    @property
+    def label(self) -> str:
+        """Arm name, disambiguated by first-stage budget when the run recorded one.
+
+        `li` alone stopped being a unique identifier the moment two li runs differed only in
+        `n_candidates` — which is the H1 experiment, and produced 22/141 against 31/141.
+        """
+        if self.n_candidates is None:
+            return self.arm
+        return f"{self.arm}@{format_budget(self.n_candidates)}"
+
+    @property
+    def premise_attribution_available(self) -> bool:
+        """Whether this run's proof text can be attributed to retrieval by inspection."""
+        return self.policy_kind in PREMISE_ATTRIBUTABLE_POLICIES
+
+    def premise_using(self) -> set[str] | None:
+        """Problems whose proof names at least one retrieved premise, or None if unmeasurable.
+
+        `None` rather than a number, because the alternative — running the vacuous test anyway —
+        returns 100% for any language model and reads as a strong causal result.
+        """
+        if not self.premise_attribution_available:
+            return None
         return {
             pid for pid, steps in self.proof.items()
             if self.proved.get(pid) and any(is_premise_tactic(t) for t in steps)
@@ -125,6 +187,45 @@ def permutation_p(d: np.ndarray, n_perm: int, rng: np.random.Generator) -> float
     return float((np.sum(null >= observed) + 1) / (n_perm + 1))
 
 
+def oracle_union(a: Arm, b: Arm) -> dict[str, Any]:
+    """Problems solved by *either* arm, over the problems both attempted.
+
+    Not a fusion result and not achievable by any single retriever — it is the **ceiling** a fusion
+    arm (reciprocal-rank fusion over both rankings) could reach. It exceeds both arms only when they
+    disagree about *which* problems they solve, which two equal counts can hide completely: on
+    ProofNet, SV and LI each solve 20 of 186 and four of those differ in each direction.
+    """
+    pids = sorted(set(a.proved) & set(b.proved))
+    won = [p for p in pids if a.proved[p] or b.proved[p]]
+    best = max(sum(a.proved[p] for p in pids), sum(b.proved[p] for p in pids))
+    return {
+        "n_problems": len(pids),
+        "n_union": len(won),
+        "n_best_single": best,
+        "gain_over_best": len(won) - best,
+        "union_rate": len(won) / len(pids) if pids else 0.0,
+    }
+
+
+def _paired_pids(
+    baseline: Arm, treatment: Arm, exclude_harness_errors: bool
+) -> list[str]:
+    """Problems both runs attempted, in a deterministic order.
+
+    Factored out so `compare` and `compare_pooled` cannot drift apart on which problems count — a
+    pooled figure computed over a different problem set from its own per-benchmark rows would be
+    indefensible and completely invisible.
+    """
+    pids = sorted(set(baseline.proved) & set(treatment.proved))
+    if exclude_harness_errors:
+        pids = [
+            p for p in pids
+            if baseline.status[p] not in HARNESS_ERROR_STATUSES
+            and treatment.status[p] not in HARNESS_ERROR_STATUSES
+        ]
+    return pids
+
+
 def compare(
     baseline: Arm,
     treatment: Arm,
@@ -143,18 +244,21 @@ def compare(
         raise ValueError(
             f"different benchmarks: {baseline.benchmark!r} vs {treatment.benchmark!r}"
         )
-    if baseline.arm == treatment.arm:
-        raise ValueError(f"both runs are arm={baseline.arm!r}; nothing to compare")
+    # Same arm at a *different* first-stage budget is a legitimate — in fact the decisive —
+    # comparison: it isolates candidate generation from the architecture, holding the encoder,
+    # index, policy, search budget and seed fixed. The guard's real job is to reject a pair that
+    # differs in nothing, so it tests that, not the arm name.
+    if baseline.run_id == treatment.run_id:
+        raise ValueError(f"both sides are the same run ({baseline.run_id!r}); nothing to compare")
+    if baseline.arm == treatment.arm and baseline.n_candidates == treatment.n_candidates:
+        raise ValueError(
+            f"both runs are arm={baseline.arm!r} at the same first-stage budget "
+            f"({format_budget(baseline.n_candidates)}); nothing to compare"
+        )
 
-    pids = sorted(set(baseline.proved) & set(treatment.proved))
-    if not pids:
+    if not set(baseline.proved) & set(treatment.proved):
         raise ValueError("the two runs share no problem ids")
-    if exclude_harness_errors:
-        pids = [
-            p for p in pids
-            if baseline.status[p] not in HARNESS_ERROR_STATUSES
-            and treatment.status[p] not in HARNESS_ERROR_STATUSES
-        ]
+    pids = _paired_pids(baseline, treatment, exclude_harness_errors)
 
     only_t = [p for p in pids if treatment.proved[p] and not baseline.proved[p]]
     only_b = [p for p in pids if baseline.proved[p] and not treatment.proved[p]]
@@ -175,14 +279,32 @@ def compare(
 
     n_b = sum(baseline.proved[p] for p in pids)
     n_t = sum(treatment.proved[p] for p in pids)
-    marginal_with_premise = [
-        p for p in only_t if any(is_premise_tactic(t) for t in treatment.proof[p])
-    ]
+    both = [p for p in pids if baseline.proved[p] and treatment.proved[p]]
+
+    # Two different questions, and conflating them produced an inflated first report. `used` = of
+    # all proofs found, how many name a premise. `needed` = of the proofs the baseline could NOT
+    # find, how many name a premise. Only the second is causal — and neither is measurable at all
+    # unless the policy's tactic vocabulary makes "names a premise" decidable from the text.
+    if treatment.premise_attribution_available:
+        using = treatment.premise_using() or set()
+        marginal_with_premise: list[str] | None = [
+            p for p in only_t if any(is_premise_tactic(t) for t in treatment.proof[p])
+        ]
+        premise_used_rate: float | None = len(using) / n_t if n_t else 0.0
+        premise_needed_rate: float | None = (
+            len(marginal_with_premise) / len(only_t) if only_t else 0.0
+        )
+    else:
+        marginal_with_premise = None
+        premise_used_rate = premise_needed_rate = None
 
     return {
         "benchmark": baseline.benchmark,
-        "baseline": {"arm": baseline.arm, "run_id": baseline.run_id, "proved": n_b},
-        "treatment": {"arm": treatment.arm, "run_id": treatment.run_id, "proved": n_t},
+        # `label` is what the report prints; `arm` stays raw so downstream keys are stable.
+        "baseline": {"arm": baseline.arm, "label": baseline.label, "run_id": baseline.run_id,
+                     "n_candidates": baseline.n_candidates, "proved": n_b},
+        "treatment": {"arm": treatment.arm, "label": treatment.label, "run_id": treatment.run_id,
+                      "n_candidates": treatment.n_candidates, "proved": n_t},
         "n_problems": len(pids),
         "excluded_harness_errors": exclude_harness_errors,
         "delta_problems": n_t - n_b,
@@ -190,58 +312,268 @@ def compare(
         "only_treatment": only_t,
         "only_baseline": only_b,
         "baseline_is_subset": not only_b,
+        # The union of the two arms, over the problems both attempted. Not achievable by any single
+        # retriever — it is the ceiling a fusion arm could reach, and it is invisible in the deltas:
+        # on FATE-M li and sv both prove 46 with a delta of exactly 0, while disagreeing about 22
+        # problems, so their union is 57. A comparison that printed only the delta would report the
+        # most interesting thing about that pair as "no difference".
+        "n_both": len(both),
+        "n_union": len(both) + len(only_t) + len(only_b),
+        "union_rate": (len(both) + len(only_t) + len(only_b)) / len(pids),
+        "union_gain_over_best": (len(both) + len(only_t) + len(only_b)) - max(n_b, n_t),
         "ci95": [lo, hi],
         "p_permutation": p_perm,
         "p_mcnemar_exact": p_mcnemar,
         "significant": significant,
         "borderline": borderline,
-        # Two different questions, and conflating them is what produced the inflated first report.
-        # `used` = of all proofs found, how many name a premise. `needed` = of the proofs the
-        # baseline could NOT find, how many name a premise. Only the second is causal.
-        "premise_used_rate": (
-            len(treatment.premise_using()) / n_t if n_t else 0.0
-        ),
-        "premise_needed_rate": (
-            len(marginal_with_premise) / len(only_t) if only_t else 0.0
-        ),
+        "policy_kind": treatment.policy_kind,
+        "premise_attribution_available": treatment.premise_attribution_available,
+        "premise_used_rate": premise_used_rate,
+        "premise_needed_rate": premise_needed_rate,
         "marginal_with_premise": marginal_with_premise,
     }
 
 
-def format_report(r: dict[str, Any]) -> str:
-    """Human-readable summary. The JSON is the record; this is for reading in a terminal."""
-    n = r["n_problems"]
+def compare_pooled(
+    pairs: list[tuple[Arm, Arm]],
+    n_boot: int = 10_000,
+    n_perm: int = 10_000,
+    seed: int = 0,
+    exclude_harness_errors: bool = False,
+) -> dict[str, Any]:
+    """One paired test over the problems of several benchmarks at once.
+
+    ## Why pool at all
+
+    FATE-M's li-vs-none contrast is +7 problems from 13 gained and 6 lost. Exact McNemar on 19
+    discordant pairs cannot reach p < 0.05 for any split closer than 15-4, so "not significant"
+    there is as much a statement about **power** as about retrieval. Problems are independent units
+    and the contrast is defined identically on each benchmark — same encoder, index, policy, search
+    budget and seed — so pooling them is a legitimate fixed-effects analysis that buys power without
+    buying GPU time.
+
+    ## Why the per-benchmark rows are always reported alongside
+
+    A pooled estimate is a problem-count-weighted average over benchmarks whose base rates and
+    retrieval sensitivity differ by design: FATE-M was chosen *because* it is retrieval-sensitive
+    and miniF2F *because* it is not. Averaging +5.0 points on one with -1.0 on another yields a
+    positive pooled figure describing neither. `per_benchmark` and `heterogeneous` exist so that
+    cannot be reported without being seen.
+
+    ## Why problem ids are namespaced
+
+    FATE-M ids are bare integers (`326`, `1597`). A pooled union keyed on the raw id would silently
+    merge two unrelated problems that happen to share a number, and the count would still look
+    plausible.
+    """
+    if len(pairs) < 2:
+        raise ValueError("pooling needs at least two benchmarks; use compare() for one")
+
+    for baseline, treatment in pairs:
+        if baseline.benchmark != treatment.benchmark:
+            raise ValueError(
+                f"a pair spans two benchmarks: {baseline.benchmark!r} vs {treatment.benchmark!r}"
+            )
+
+    benchmarks = [t.benchmark for _, t in pairs]
+    if len(set(benchmarks)) != len(benchmarks):
+        raise ValueError(
+            f"a benchmark appears more than once ({benchmarks}); pooling it twice would count its "
+            "problems twice and shrink the p-value for free"
+        )
+
+    # Every pair must be the SAME contrast. Pooling li-vs-none with sv-vs-none would produce a
+    # number that answers no question, and the two would look identical in any summary.
+    contrasts = {
+        (b.arm, b.n_candidates, t.arm, t.n_candidates) for b, t in pairs
+    }
+    if len(contrasts) != 1:
+        raise ValueError(
+            f"the pairs are not the same contrast: {sorted(contrasts)}. Pooling different "
+            "comparisons gives an average of unrelated effects."
+        )
+
+    per_pair = [
+        compare(b, t, n_boot, n_perm, seed, exclude_harness_errors) for b, t in pairs
+    ]
+
+    diffs: list[float] = []
+    only_t: list[str] = []
+    only_b: list[str] = []
+    for (baseline, treatment), r in zip(pairs, per_pair, strict=True):
+        pids = _paired_pids(baseline, treatment, exclude_harness_errors)
+        diffs += [
+            float(treatment.proved[p]) - float(baseline.proved[p]) for p in pids
+        ]
+        only_t += [f"{treatment.benchmark}:{p}" for p in r["only_treatment"]]
+        only_b += [f"{treatment.benchmark}:{p}" for p in r["only_baseline"]]
+
+    d = np.array(diffs, dtype=np.float64)
+    rng = np.random.default_rng(seed)
+    lo, hi = bootstrap_ci(d, n_boot, rng)
+    p_perm = permutation_p(d, n_perm, rng)
+    p_mcnemar = mcnemar_exact_p(len(only_t), len(only_b))
+
+    ci_excludes_zero = lo > 0 or hi < 0
+    significant = bool(ci_excludes_zero and p_perm < 0.05)
+    borderline = bool(ci_excludes_zero != (p_perm < 0.05))
+
+    signs = {int(np.sign(r["delta_problems"])) for r in per_pair}
+    heterogeneous = len(signs - {0}) > 1
+
+    first_b, first_t = pairs[0]
+    return {
+        "benchmarks": benchmarks,
+        "baseline": {"arm": first_b.arm, "label": first_b.label,
+                     "n_candidates": first_b.n_candidates,
+                     "run_ids": [b.run_id for b, _ in pairs]},
+        "treatment": {"arm": first_t.arm, "label": first_t.label,
+                      "n_candidates": first_t.n_candidates,
+                      "run_ids": [t.run_id for _, t in pairs]},
+        "n_problems": int(len(d)),
+        "excluded_harness_errors": exclude_harness_errors,
+        "delta_problems": int(d.sum()),
+        "delta_rate": float(d.mean()),
+        "only_treatment": only_t,
+        "only_baseline": only_b,
+        "ci95": [lo, hi],
+        "p_permutation": p_perm,
+        "p_mcnemar_exact": p_mcnemar,
+        "significant": significant,
+        "borderline": borderline,
+        "heterogeneous": heterogeneous,
+        "per_benchmark": [
+            {
+                "benchmark": r["benchmark"],
+                "n_problems": r["n_problems"],
+                "baseline_proved": r["baseline"]["proved"],
+                "treatment_proved": r["treatment"]["proved"],
+                "delta_problems": r["delta_problems"],
+                "delta_rate": r["delta_rate"],
+                "p_mcnemar_exact": r["p_mcnemar_exact"],
+                "significant": r["significant"],
+            }
+            for r in per_pair
+        ],
+    }
+
+
+def format_pooled_report(r: dict[str, Any]) -> str:
+    """Human-readable pooled summary. The per-benchmark table is not optional decoration."""
     b, t = r["baseline"], r["treatment"]
+    bl, tl = b["label"], t["label"]
+    n = r["n_problems"]
     verdict = (
         "SIGNIFICANT" if r["significant"]
         else "borderline (CI and permutation disagree)" if r["borderline"]
         else "not significant"
     )
     lines = [
-        f"=== {r['benchmark']}: {t['arm']} vs {b['arm']} "
+        f"=== POOLED: {tl} vs {bl} over {'+'.join(r['benchmarks'])} "
+        f"({n} problems"
+        f"{', harness errors excluded' if r['excluded_harness_errors'] else ''}) ===",
+        "",
+        f"  {'benchmark':<12} {'n':>5} {bl:>8} {tl:>8} {'delta':>7} {'p (McNemar)':>12}",
+    ]
+    for row in r["per_benchmark"]:
+        lines.append(
+            f"  {row['benchmark']:<12} {row['n_problems']:>5} "
+            f"{row['baseline_proved']:>8} {row['treatment_proved']:>8} "
+            f"{row['delta_problems']:>+7} {row['p_mcnemar_exact']:>12.4f}"
+        )
+    lines += [
+        "",
+        f"  pooled delta   {r['delta_problems']:>+4} problems  "
+        f"({100 * r['delta_rate']:+.1f} points over {n})",
+        f"  gained / lost  {len(r['only_treatment'])} / {len(r['only_baseline'])}",
+        f"  95% CI         [{r['ci95'][0]:+.4f}, {r['ci95'][1]:+.4f}]",
+        f"  p (perm)       {r['p_permutation']:.4f}",
+        f"  p (McNemar)    {r['p_mcnemar_exact']:.5f}",
+        f"  verdict        {verdict}",
+    ]
+    if r["heterogeneous"]:
+        lines += [
+            "",
+            "  !! HETEROGENEOUS: the per-benchmark deltas do not share a sign. This total is a",
+            "     problem-count-weighted average of effects pointing opposite ways, and describes",
+            "     neither benchmark. Report the rows above, not the pooled figure.",
+        ]
+    return "\n".join(lines)
+
+
+def format_report(r: dict[str, Any]) -> str:
+    """Human-readable summary. The JSON is the record; this is for reading in a terminal."""
+    n = r["n_problems"]
+    b, t = r["baseline"], r["treatment"]
+    # `.get` so a report loaded from an older table1.json still renders.
+    bl, tl = b.get("label", b["arm"]), t.get("label", t["arm"])
+    verdict = (
+        "SIGNIFICANT" if r["significant"]
+        else "borderline (CI and permutation disagree)" if r["borderline"]
+        else "not significant"
+    )
+    lines = [
+        f"=== {r['benchmark']}: {tl} vs {bl} "
         f"({n} problems{', harness errors excluded' if r['excluded_harness_errors'] else ''}) ===",
-        f"  {b['arm']:<10} {b['proved']:>4}/{n}  ({100 * b['proved'] / n:5.1f}%)",
-        f"  {t['arm']:<10} {t['proved']:>4}/{n}  ({100 * t['proved'] / n:5.1f}%)",
+        f"  {bl:<10} {b['proved']:>4}/{n}  ({100 * b['proved'] / n:5.1f}%)",
+        f"  {tl:<10} {t['proved']:>4}/{n}  ({100 * t['proved'] / n:5.1f}%)",
         f"  delta      {r['delta_problems']:>+4} problems  ({100 * r['delta_rate']:+.1f} points)",
         "",
-        f"  {t['arm']}-only : {len(r['only_treatment'])}  {r['only_treatment']}",
-        f"  {b['arm']}-only : {len(r['only_baseline'])}  {r['only_baseline']}",
-        f"  no displacement: {r['baseline_is_subset']}"
-        f"{'' if r['baseline_is_subset'] else '  <-- retrieval COST problems; investigate'}",
+        f"  {tl}-only : {len(r['only_treatment'])}  {r['only_treatment']}",
+        f"  {bl}-only : {len(r['only_baseline'])}  {r['only_baseline']}",
+    ]
+
+    # The warning only makes sense against the no-retrieval control, where a problem the baseline
+    # solved and the treatment did not really is retrieval *costing* a proof. Between two retrievers
+    # it is symmetric disagreement, and calling it "cost" would frame an even split as a regression.
+    if r["baseline_is_subset"]:
+        lines.append("  no displacement: True")
+    elif b["arm"] == "none":
+        lines.append(
+            "  no displacement: False  <-- retrieval COST proofs the model found unaided; "
+            "investigate"
+        )
+    else:
+        lines.append(
+            f"  disagreement: {len(r['only_treatment'])} vs {len(r['only_baseline'])} — "
+            "neither arm dominates; see the union below"
+        )
+
+    lines += [
+        "",
+        f"  union         {r['n_union']}/{n}  ({100 * r['union_rate']:5.1f}%)  "
+        f"= {r['n_both']} shared + {len(r['only_treatment'])} + {len(r['only_baseline'])}",
+        f"                {r['union_gain_over_best']:+d} over the better arm — the ceiling a "
+        f"fusion of the two could reach",
         "",
         f"  95% CI     [{r['ci95'][0]:+.4f}, {r['ci95'][1]:+.4f}]",
         f"  p (perm)   {r['p_permutation']:.4f}",
         f"  p (McNemar exact)  {r['p_mcnemar_exact']:.5f}",
         f"  verdict    {verdict}",
         "",
-        f"  premise USED  : {100 * r['premise_used_rate']:.0f}% of {t['arm']}'s proofs "
-        f"name a premise",
-        f"  premise NEEDED: {100 * r['premise_needed_rate']:.0f}% of the "
-        f"{len(r['only_treatment'])} problems only {t['arm']} solved name a premise",
     ]
-    if r["premise_used_rate"] > r["premise_needed_rate"] + 1e-9:
-        lines.append(
-            "                  (USED exceeds NEEDED: some premise-naming proofs were not "
-            "necessary — the baseline closed the same goals unaided)"
-        )
+
+    used, needed = r.get("premise_used_rate"), r.get("premise_needed_rate")
+    if used is None or needed is None:
+        lines += [
+            f"  premise attribution: NOT MEASURABLE for policy "
+            f"{r.get('policy_kind', '?')!r}",
+            "    'names a premise' is decidable from proof text only for the model-free",
+            "    repertoire, whose tactics are either a fixed closer or a premise template. Every",
+            "    tactic a language model writes is 'not a closer', so the same test would mark all",
+            "    of them as premise-naming whether or not retrieval contributed — which is why it",
+            "    is withheld rather than printed. Measuring it for real needs the premises",
+            "    offered at each state, which the search trace does not currently record.",
+        ]
+    else:
+        lines += [
+            f"  premise USED  : {100 * used:.0f}% of {tl}'s proofs name a premise",
+            f"  premise NEEDED: {100 * needed:.0f}% of the "
+            f"{len(r['only_treatment'])} problems only {tl} solved name a premise",
+        ]
+        if used > needed + 1e-9:
+            lines.append(
+                "                  (USED exceeds NEEDED: some premise-naming proofs were not "
+                "necessary — the baseline closed the same goals unaided)"
+            )
     return "\n".join(lines)

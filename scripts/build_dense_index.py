@@ -32,10 +32,15 @@ candidates back to float32 for the matmul, so scoring precision is unaffected.
 from __future__ import annotations
 
 import argparse
+import sys
 import time
 from pathlib import Path
 
 import numpy as np
+
+# Importable from a fresh clone with no install and no exported PYTHONPATH: a login-node
+# `python scripts/<this>.py` must work, because that is how the analysis scripts get run.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from prooflens_prover.data.premises import corpus_id, load_premise_corpus
 from prooflens_prover.retrieval.dense import (
@@ -46,7 +51,7 @@ from prooflens_prover.retrieval.dense import (
     l2_normalise,
 )
 from prooflens_prover.retrieval.lean_text import premise_document
-from prooflens_prover.utils.logging import get_logger
+from prooflens_prover.utils.logging import ensure_utf8_output, get_logger
 
 log = get_logger(__name__)
 
@@ -178,6 +183,7 @@ def encode_sv(checkpoint: str, texts: list[str], batch_size: int,
 
 
 def main() -> None:
+    ensure_utf8_output()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--kind", required=True, choices=["li", "sv"])
     ap.add_argument("--checkpoint", required=True)

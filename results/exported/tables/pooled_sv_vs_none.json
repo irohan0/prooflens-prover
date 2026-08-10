@@ -1,0 +1,396 @@
+{
+  "comparisons": [
+    {
+      "primary": {
+        "benchmark": "fate_m",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "n_candidates": null,
+          "proved": 39
+        },
+        "treatment": {
+          "arm": "sv",
+          "label": "sv",
+          "run_id": "fate_m_sv_vllm_20260809T182632701350_8175a00",
+          "n_candidates": null,
+          "proved": 46
+        },
+        "n_problems": 141,
+        "excluded_harness_errors": false,
+        "delta_problems": 7,
+        "delta_rate": 0.04964539007092199,
+        "only_treatment": [
+          "1569",
+          "1595",
+          "1998",
+          "200",
+          "2880",
+          "336",
+          "380",
+          "384",
+          "436",
+          "7125"
+        ],
+        "only_baseline": [
+          "1087",
+          "1990",
+          "7532"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 36,
+        "n_union": 49,
+        "union_rate": 0.3475177304964539,
+        "union_gain_over_best": 3,
+        "ci95": [
+          0.0,
+          0.09929078014184398
+        ],
+        "p_permutation": 0.09359064093590641,
+        "p_mcnemar_exact": 0.09228515625,
+        "significant": false,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      },
+      "sensitivity": {
+        "benchmark": "fate_m",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "n_candidates": null,
+          "proved": 39
+        },
+        "treatment": {
+          "arm": "sv",
+          "label": "sv",
+          "run_id": "fate_m_sv_vllm_20260809T182632701350_8175a00",
+          "n_candidates": null,
+          "proved": 46
+        },
+        "n_problems": 141,
+        "excluded_harness_errors": true,
+        "delta_problems": 7,
+        "delta_rate": 0.04964539007092199,
+        "only_treatment": [
+          "1569",
+          "1595",
+          "1998",
+          "200",
+          "2880",
+          "336",
+          "380",
+          "384",
+          "436",
+          "7125"
+        ],
+        "only_baseline": [
+          "1087",
+          "1990",
+          "7532"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 36,
+        "n_union": 49,
+        "union_rate": 0.3475177304964539,
+        "union_gain_over_best": 3,
+        "ci95": [
+          0.0,
+          0.09929078014184398
+        ],
+        "p_permutation": 0.09359064093590641,
+        "p_mcnemar_exact": 0.09228515625,
+        "significant": false,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      }
+    },
+    {
+      "primary": {
+        "benchmark": "proofnet_test",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "proofnet_test_none_vllm_20260809T200647051581_badc9e4",
+          "n_candidates": null,
+          "proved": 19
+        },
+        "treatment": {
+          "arm": "sv",
+          "label": "sv",
+          "run_id": "proofnet_test_sv_vllm_20260809T200647068905_badc9e4",
+          "n_candidates": null,
+          "proved": 26
+        },
+        "n_problems": 186,
+        "excluded_harness_errors": false,
+        "delta_problems": 7,
+        "delta_rate": 0.03763440860215054,
+        "only_treatment": [
+          "210",
+          "243",
+          "261",
+          "283",
+          "289",
+          "296",
+          "316",
+          "365"
+        ],
+        "only_baseline": [
+          "337"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 18,
+        "n_union": 27,
+        "union_rate": 0.14516129032258066,
+        "union_gain_over_best": 1,
+        "ci95": [
+          0.010752688172043012,
+          0.06989247311827956
+        ],
+        "p_permutation": 0.041995800419958006,
+        "p_mcnemar_exact": 0.0390625,
+        "significant": true,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      },
+      "sensitivity": {
+        "benchmark": "proofnet_test",
+        "baseline": {
+          "arm": "none",
+          "label": "none",
+          "run_id": "proofnet_test_none_vllm_20260809T200647051581_badc9e4",
+          "n_candidates": null,
+          "proved": 19
+        },
+        "treatment": {
+          "arm": "sv",
+          "label": "sv",
+          "run_id": "proofnet_test_sv_vllm_20260809T200647068905_badc9e4",
+          "n_candidates": null,
+          "proved": 26
+        },
+        "n_problems": 180,
+        "excluded_harness_errors": true,
+        "delta_problems": 7,
+        "delta_rate": 0.03888888888888889,
+        "only_treatment": [
+          "210",
+          "243",
+          "261",
+          "283",
+          "289",
+          "296",
+          "316",
+          "365"
+        ],
+        "only_baseline": [
+          "337"
+        ],
+        "baseline_is_subset": false,
+        "n_both": 18,
+        "n_union": 27,
+        "union_rate": 0.15,
+        "union_gain_over_best": 1,
+        "ci95": [
+          0.005555555555555556,
+          0.07222222222222222
+        ],
+        "p_permutation": 0.035096490350964904,
+        "p_mcnemar_exact": 0.0390625,
+        "significant": true,
+        "borderline": false,
+        "policy_kind": "vllm",
+        "premise_attribution_available": false,
+        "premise_used_rate": null,
+        "premise_needed_rate": null,
+        "marginal_with_premise": null
+      }
+    }
+  ],
+  "pooled": {
+    "primary": {
+      "benchmarks": [
+        "fate_m",
+        "proofnet_test"
+      ],
+      "baseline": {
+        "arm": "none",
+        "label": "none",
+        "n_candidates": null,
+        "run_ids": [
+          "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "proofnet_test_none_vllm_20260809T200647051581_badc9e4"
+        ]
+      },
+      "treatment": {
+        "arm": "sv",
+        "label": "sv",
+        "n_candidates": null,
+        "run_ids": [
+          "fate_m_sv_vllm_20260809T182632701350_8175a00",
+          "proofnet_test_sv_vllm_20260809T200647068905_badc9e4"
+        ]
+      },
+      "n_problems": 327,
+      "excluded_harness_errors": false,
+      "delta_problems": 14,
+      "delta_rate": 0.04281345565749235,
+      "only_treatment": [
+        "fate_m:1569",
+        "fate_m:1595",
+        "fate_m:1998",
+        "fate_m:200",
+        "fate_m:2880",
+        "fate_m:336",
+        "fate_m:380",
+        "fate_m:384",
+        "fate_m:436",
+        "fate_m:7125",
+        "proofnet_test:210",
+        "proofnet_test:243",
+        "proofnet_test:261",
+        "proofnet_test:283",
+        "proofnet_test:289",
+        "proofnet_test:296",
+        "proofnet_test:316",
+        "proofnet_test:365"
+      ],
+      "only_baseline": [
+        "fate_m:1087",
+        "fate_m:1990",
+        "fate_m:7532",
+        "proofnet_test:337"
+      ],
+      "ci95": [
+        0.01529051987767584,
+        0.07033639143730887
+      ],
+      "p_permutation": 0.0044995500449955,
+      "p_mcnemar_exact": 0.004343509674072266,
+      "significant": true,
+      "borderline": false,
+      "heterogeneous": false,
+      "per_benchmark": [
+        {
+          "benchmark": "fate_m",
+          "n_problems": 141,
+          "baseline_proved": 39,
+          "treatment_proved": 46,
+          "delta_problems": 7,
+          "delta_rate": 0.04964539007092199,
+          "p_mcnemar_exact": 0.09228515625,
+          "significant": false
+        },
+        {
+          "benchmark": "proofnet_test",
+          "n_problems": 186,
+          "baseline_proved": 19,
+          "treatment_proved": 26,
+          "delta_problems": 7,
+          "delta_rate": 0.03763440860215054,
+          "p_mcnemar_exact": 0.0390625,
+          "significant": true
+        }
+      ]
+    },
+    "sensitivity": {
+      "benchmarks": [
+        "fate_m",
+        "proofnet_test"
+      ],
+      "baseline": {
+        "arm": "none",
+        "label": "none",
+        "n_candidates": null,
+        "run_ids": [
+          "fate_m_none_vllm_20260809T152210619068_8175a00",
+          "proofnet_test_none_vllm_20260809T200647051581_badc9e4"
+        ]
+      },
+      "treatment": {
+        "arm": "sv",
+        "label": "sv",
+        "n_candidates": null,
+        "run_ids": [
+          "fate_m_sv_vllm_20260809T182632701350_8175a00",
+          "proofnet_test_sv_vllm_20260809T200647068905_badc9e4"
+        ]
+      },
+      "n_problems": 321,
+      "excluded_harness_errors": true,
+      "delta_problems": 14,
+      "delta_rate": 0.04361370716510903,
+      "only_treatment": [
+        "fate_m:1569",
+        "fate_m:1595",
+        "fate_m:1998",
+        "fate_m:200",
+        "fate_m:2880",
+        "fate_m:336",
+        "fate_m:380",
+        "fate_m:384",
+        "fate_m:436",
+        "fate_m:7125",
+        "proofnet_test:210",
+        "proofnet_test:243",
+        "proofnet_test:261",
+        "proofnet_test:283",
+        "proofnet_test:289",
+        "proofnet_test:296",
+        "proofnet_test:316",
+        "proofnet_test:365"
+      ],
+      "only_baseline": [
+        "fate_m:1087",
+        "fate_m:1990",
+        "fate_m:7532",
+        "proofnet_test:337"
+      ],
+      "ci95": [
+        0.01557632398753894,
+        0.07165109034267912
+      ],
+      "p_permutation": 0.003999600039996,
+      "p_mcnemar_exact": 0.004343509674072266,
+      "significant": true,
+      "borderline": false,
+      "heterogeneous": false,
+      "per_benchmark": [
+        {
+          "benchmark": "fate_m",
+          "n_problems": 141,
+          "baseline_proved": 39,
+          "treatment_proved": 46,
+          "delta_problems": 7,
+          "delta_rate": 0.04964539007092199,
+          "p_mcnemar_exact": 0.09228515625,
+          "significant": false
+        },
+        {
+          "benchmark": "proofnet_test",
+          "n_problems": 180,
+          "baseline_proved": 19,
+          "treatment_proved": 26,
+          "delta_problems": 7,
+          "delta_rate": 0.03888888888888889,
+          "p_mcnemar_exact": 0.0390625,
+          "significant": true
+        }
+      ]
+    }
+  }
+}

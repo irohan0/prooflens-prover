@@ -88,9 +88,18 @@ class SearchConfig:
     | `max_expansions` | `MAX_NODES` | 64 |
     | `length_penalty` | `alpha` | 0.5 |
 
-    Their commented-out "large" variant (64 / 128 / 1024) is what the paper's Pass@64x64 used, and
-    is ~4x the cost. State which of the two any reported run matches — `SearchConfig.large()`
-    builds the large one.
+    Their commented-out "large" variant (`NUM_SAMPLES=64`, `MAX_DEPTH=128`, `MAX_NODES=1024`) is
+    what the paper's numbers used, and the cost gap is **not** small:
+
+    | configuration | generations per problem |
+    |---|--:|
+    | shipped default (64 nodes x 16 samples) | 1,024 |
+    | large variant (1,024 nodes x 64 samples) | 65,536 |
+    | the paper's Pass@64 (64 passes of large) | 4,194,304 |
+
+    So their published FATE-M 56.7 sits at roughly **4,000x** the generation budget of a single
+    shipped-config pass. That is why the Tier 1 gate cannot be "reproduce 56.7" — see the README.
+    State which configuration any reported run used; `SearchConfig.large()` builds the large one.
 
     Caveat on `max_expansions`: theirs counts nodes *inserted* into the frontier, ours counts nodes
     *expanded*. Ours is the stricter reading (it bounds model calls directly), so at equal numbers

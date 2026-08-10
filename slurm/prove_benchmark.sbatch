@@ -34,6 +34,10 @@ INDEX="${INDEX:-data/index/li_ft_novel_bm25}"
 SAMPLES="${SAMPLES:-32}"
 MIN_CLOSERS="${MIN_CLOSERS:-19}"
 DEVICE="${DEVICE:-cuda}"
+# li only: premises kept by the pooled first stage before exact MaxSim rerank. Empty = the index's
+# stored 1000, which measured recall@10 = 0.443 against exact MaxSim on real queries. 50000 measured
+# 0.979. See results/tables/li_recall_fate_m.json.
+N_CANDIDATES="${N_CANDIDATES:-}"
 EXTRA="${EXTRA:-}"          # e.g. EXTRA="--limit 5" for a smoke run, or "--resume results/logs/<id>"
 
 export PATH="$HOME/.elan/bin:$PATH"
@@ -50,6 +54,7 @@ echo "host      : $(hostname)"
 echo "git sha   : $(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 echo "cpus      : ${SLURM_CPUS_ON_NODE:-?}"
 echo "benchmark : $BENCHMARK | arm: $ARM | index: $INDEX"
+echo "n_cand    : ${N_CANDIDATES:-(index default)}"
 echo
 
 # ---------------------------------------------------------------------------------------------
@@ -80,6 +85,7 @@ echo
     --samples-per-step "$SAMPLES" \
     --min-closers "$MIN_CLOSERS" \
     --device "$DEVICE" \
+    ${N_CANDIDATES:+--n-candidates "$N_CANDIDATES"} \
     $EXTRA
 
 echo

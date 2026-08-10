@@ -29,17 +29,22 @@ import sys
 import time
 from pathlib import Path
 
+# Importable from a fresh clone with no install and no exported PYTHONPATH: a login-node
+# `python scripts/<this>.py` must work, because that is how the analysis scripts get run.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
 from prooflens_prover.data.benchmarks import load_benchmark
 from prooflens_prover.lean.leaninteract_backend import (
     LeanInteractBackend,
     statement_with_proof,
 )
-from prooflens_prover.utils.logging import get_logger
+from prooflens_prover.utils.logging import ensure_utf8_output, get_logger
 
 log = get_logger(__name__)
 
 
 def main() -> None:
+    ensure_utf8_output()
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--run", required=True, type=Path, help="a results/logs/<run_id> directory")
     ap.add_argument("--data-root", required=True, type=Path)

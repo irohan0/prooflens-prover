@@ -1,0 +1,32 @@
+{
+  "index": "data/index/li_ft_novel_bm25",
+  "corpus_id": "276070:31db61c63a9b7ee1",
+  "deployed_n_candidates": 1000,
+  "benchmark": "fate_m",
+  "n_queries": 141,
+  "k": 10,
+  "query_tokens": {
+    "mean": 74.91489361702128,
+    "min": 17,
+    "max": 217
+  },
+  "recall_by_n_candidates": {
+    "1000": {
+      "recall": 0.44255319148936173,
+      "n_lossless": 9
+    },
+    "5000": {
+      "recall": 0.6957446808510638,
+      "n_lossless": 32
+    },
+    "20000": {
+      "recall": 0.8879432624113475,
+      "n_lossless": 81
+    },
+    "50000": {
+      "recall": 0.9787234042553191,
+      "n_lossless": 124
+    }
+  },
+  "elapsed_s": 1379.2
+}
