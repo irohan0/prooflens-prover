@@ -17,7 +17,12 @@ from __future__ import annotations
 import argparse
 import json
 import shutil
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from prooflens_prover.utils.io import read_jsonl  # noqa: E402
 
 #: Kept from each attempt row. `trace` is deliberately absent — it is the bulk of the file and no
 #: reported number depends on it.
@@ -53,7 +58,13 @@ def main() -> None:
         dest.mkdir(exist_ok=True)
         shutil.copy2(mf, dest / "manifest.json")
 
-        rows = [json.loads(x) for x in af.read_text(encoding="utf-8").splitlines() if x.strip()]
+        # `verify_proofs.py` writes this, and without it the exported records cannot show that a
+        # claimed proof was ever independently re-elaborated. `passk_union.py` refuses to count an
+        # unverified run, so leaving it behind here would make every exported run uncountable.
+        if (vf := d / "verification.json").exists():
+            shutil.copy2(vf, dest / "verification.json")
+
+        rows = list(read_jsonl(af))
         if args.keep_traces:
             shutil.copy2(af, dest / "attempts.jsonl")
         else:

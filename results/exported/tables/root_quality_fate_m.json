@@ -17,9 +17,9 @@
     {
       "arm": "li@50k",
       "n_problems": 141,
-      "n_candidates": 1457,
-      "mean_logprob": -0.8276,
-      "mean_best_logprob": -0.1528
+      "n_candidates": 1453,
+      "mean_logprob": -0.8163,
+      "mean_best_logprob": -0.1465
     }
   ],
   "comparisons": [
@@ -53,12 +53,12 @@
       "contrast": "li@50k vs none",
       "statistic": "mean",
       "n_problems": 141,
-      "mean_difference": 0.10644400920457255,
+      "mean_difference": 0.12653101501230984,
       "ci95": [
-        0.03805933039337485,
-        0.17576532342293838
+        0.05990006755040535,
+        0.19307793757657762
       ],
-      "p_permutation": 0.0030996900309969004,
+      "p_permutation": 0.00019998000199980003,
       "significant": true,
       "borderline": false
     },
@@ -66,12 +66,12 @@
       "contrast": "li@50k vs none",
       "statistic": "best",
       "n_problems": 141,
-      "mean_difference": 0.01949927491526854,
+      "mean_difference": 0.025820202660388106,
       "ci95": [
-        0.0030845272131733636,
-        0.036366457364391064
+        0.008846134551687292,
+        0.04296583125718181
       ],
-      "p_permutation": 0.023897610238976102,
+      "p_permutation": 0.0037996200379962005,
       "significant": true,
       "borderline": false
     },
@@ -79,12 +79,12 @@
       "contrast": "li@50k vs sv",
       "statistic": "mean",
       "n_problems": 141,
-      "mean_difference": 0.004105550316602617,
+      "mean_difference": 0.024192556124339917,
       "ci95": [
-        -0.05532747452434573,
-        0.061398054033099995
+        -0.04021759725715362,
+        0.08919546765494893
       ],
-      "p_permutation": 0.8886111388861114,
+      "p_permutation": 0.46885311468853114,
       "significant": false,
       "borderline": false
     },
@@ -92,12 +92,12 @@
       "contrast": "li@50k vs sv",
       "statistic": "best",
       "n_problems": 141,
-      "mean_difference": -0.0102454567495063,
+      "mean_difference": -0.003924529004386738,
       "ci95": [
-        -0.025004406652444945,
-        0.003969166655830693
+        -0.018578718003788627,
+        0.010907490965152079
       ],
-      "p_permutation": 0.16328367163283672,
+      "p_permutation": 0.6091390860913909,
       "significant": false,
       "borderline": false
     }

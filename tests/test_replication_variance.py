@@ -123,6 +123,19 @@ class TestReplicateGuards:
                       config_override={"n_problems": 140})
         assert len(group_draws([a, b])[("fate_m", "li@50k")]) == 2
 
+    def test_node_local_staging_paths_do_not_disqualify_a_replicate(self, tmp_path):
+        """Staged runs write Mathlib under `/tmp/slurm.<jobid>`, so no two ever share the path.
+
+        Without this exemption the script rejects every genuine cluster replicate and only ever
+        runs on NFS runs — the configuration measured to change a published number (ProofNet, 26
+        under NFS against 28 staged, same arm and seed).
+        """
+        a = write_run(tmp_path, "a", seed=0, solved={"1": ["rfl"]},
+                      config_override={"lean_project": "/tmp/slurm.18473774/lean"})
+        b = write_run(tmp_path, "b", seed=1, solved={"1": ["rfl"]},
+                      config_override={"lean_project": "/tmp/slurm.18473999/lean"})
+        assert len(group_draws([a, b])[("fate_m", "li@50k")]) == 2
+
     def test_draws_are_sorted_by_seed(self, tmp_path):
         a = write_run(tmp_path, "a", seed=5, solved={"1": ["rfl"]})
         b = write_run(tmp_path, "b", seed=2, solved={"1": ["rfl"]})

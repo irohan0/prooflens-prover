@@ -38,6 +38,7 @@ from prooflens_prover.lean.leaninteract_backend import (
     LeanInteractBackend,
     statement_with_proof,
 )
+from prooflens_prover.utils.io import read_jsonl
 from prooflens_prover.utils.logging import ensure_utf8_output, get_logger
 
 log = get_logger(__name__)
@@ -55,11 +56,7 @@ def main() -> None:
 
     manifest = json.loads((args.run / "manifest.json").read_text(encoding="utf-8"))
     benchmark = manifest["config"]["benchmark"]
-    rows = [
-        json.loads(line)
-        for line in (args.run / "attempts.jsonl").read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    rows = list(read_jsonl(args.run / "attempts.jsonl"))
     claimed = [r for r in rows if r.get("proved")]
     log.info("%s: %d attempts, %d claimed proved", benchmark, len(rows), len(claimed))
     if not claimed:

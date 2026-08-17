@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from prooflens_prover.eval.compare import format_budget
+from prooflens_prover.utils.io import read_jsonl
 
 #: Separator joining a proof's tactics into one comparable string. Chosen because it cannot occur
 #: inside a Lean tactic, so a join can never make two different proofs compare equal.
@@ -57,6 +58,31 @@ class Draw:
 
     _retrieval: dict = field(default_factory=dict, repr=False)
 
+    #: Problems this run claimed and `verify_proofs.py` rejected. Held rather than just subtracted,
+    #: so a report can state how many claims were discounted instead of leaving the difference
+    #: between `n_proved` in the manifest and the rate here unexplained.
+    discounted: set[str] = field(default_factory=set)
+
+
+def failed_verification(run_dir: Path) -> set[str]:
+    """Problem ids whose claimed proof did NOT re-elaborate, from this run's `verification.json`.
+
+    Empty when the report is absent — callers that require verification check for that separately.
+    This function answers only "which claims did the independent re-check reject?".
+
+    **Why a claim can fail while the search was honest.** Measured on ProofNet / sv / seed 6: the
+    recorded proof begins with a bare `let`. During search each tactic is applied to a proof state
+    on its own, so `let` was accepted as one step; verification joins the steps with newlines into a
+    single tactic block, where `let` swallows the following line as its binder name and the block
+    stops parsing. The rejection is still correct — a proof that does not elaborate is not a proof —
+    but it is a *serialisation* failure, not a `sorry` and not an unsound step.
+    """
+    vf = run_dir / "verification.json"
+    if not vf.exists():
+        return set()
+    report = json.loads(vf.read_text(encoding="utf-8"))
+    return {str(f["problem_id"]) for f in report.get("failures") or ()}
+
 
 def load_draw(run_dir: Path) -> Draw:
     """Read one run directory into a `Draw`, with problem ids namespaced by benchmark.
@@ -77,15 +103,23 @@ def load_draw(run_dir: Path) -> Draw:
         config=cfg,
         _retrieval=(manifest.get("outcome") or {}).get("retrieval") or {},
     )
-    for line in (run_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
+    rejected = failed_verification(run_dir)
+    for row in read_jsonl(run_dir / "attempts.jsonl"):
         pid = f"{draw.benchmark}:{row['problem_id']}"
         draw.attempted.add(pid)
-        if row.get("proved"):
-            draw.solved.add(pid)
-            draw.proofs[pid] = TACTIC_JOIN.join(row.get("proof") or ())
+        if not row.get("proved"):
+            continue
+        # A claimed proof that does not re-elaborate is not a proof, so it does not enter `solved`.
+        # This is the minimal correct adjustment, and deliberately not "discard the run": on the one
+        # run where it fired, 34 of 35 proofs verified and that run held the joint-highest count of
+        # its arm, so dropping it entirely would have removed a high seed and biased the arm
+        # downward — a larger error than the one being corrected. Discounting can only ever lower a
+        # reported rate.
+        if str(row["problem_id"]) in rejected:
+            draw.discounted.add(pid)
+            continue
+        draw.solved.add(pid)
+        draw.proofs[pid] = TACTIC_JOIN.join(row.get("proof") or ())
     return draw
 
 

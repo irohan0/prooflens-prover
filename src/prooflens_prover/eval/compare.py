@@ -29,6 +29,7 @@ from typing import Any
 import numpy as np
 
 from prooflens_prover.prover.repertoire import DEFAULT_CLOSERS
+from prooflens_prover.utils.io import read_jsonl
 
 #: Statuses meaning the harness failed rather than the search: the problem was not really attempted.
 HARNESS_ERROR_STATUSES = frozenset({"error"})
@@ -104,13 +105,16 @@ class Arm:
             # Absent means the run predates the field, and every such run used the repertoire.
             policy_kind=cfg.get("policy_kind") or "repertoire",
         )
-        for line in (d / "attempts.jsonl").read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            r = json.loads(line)
+        # Imported rather than restated: two loaders disagreeing about which problems a run solved
+        # would put `compare_arms.py` and `passk_union.py` on different denominators for the same
+        # runs, and the discrepancy would surface as an arm effect.
+        from prooflens_prover.eval.draws import failed_verification
+
+        rejected = failed_verification(d)
+        for r in read_jsonl(d / "attempts.jsonl"):
             pid = str(r["problem_id"])
-            a.proved[pid] = bool(r.get("proved"))
-            a.status[pid] = r.get("status", "?")
+            a.proved[pid] = bool(r.get("proved")) and pid not in rejected
+            a.status[pid] = ("verify_failed" if pid in rejected else r.get("status", "?"))
             a.proof[pid] = list(r.get("proof") or [])
         return a
 

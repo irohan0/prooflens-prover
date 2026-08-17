@@ -62,7 +62,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -70,24 +69,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from prooflens_prover.eval.compare import format_budget  # noqa: E402
+from prooflens_prover.eval.premises import cited_premises, load_corpus  # noqa: E402
+from prooflens_prover.utils.io import read_jsonl  # noqa: E402
 from prooflens_prover.utils.logging import ensure_utf8_output  # noqa: E402
-
-#: A Lean identifier: leading letter or underscore, then name characters. Dots are included so a
-#: qualified citation (`Fintype.card_pi_const`) is captured whole rather than split into two tokens
-#: that would each resolve wrongly. Subscripts and primes appear in real Mathlib names.
-IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_.'!?₀-₉¹²³]*")
-
-#: Tokens that are tactic syntax rather than premise citations. Kept deliberately short and used
-#: only for a *sensitivity* figure, never the primary one. It barely matters which way it goes:
-#: every common tactic word that doubles as a lemma name (`rfl` is the single most frequent training
-#: premise, at 3,402 positives) is firmly inside the seen set, so it cannot manufacture an
-#: unseen-premise finding. Excluding them changes the denominator, not the signal.
-TACTIC_WORDS = frozenset("""
-    exact apply rw rwa simp simpa intro intros refine constructor rcases obtain cases use have let
-    show calc ring ring_nf field_simp linarith nlinarith norm_num omega decide aesop tauto trivial
-    exacts induction subst unfold change conv congr ext specialize by at with this fun to and or if
-    then else from rfl
-""".split())
 
 
 def stream_theorems(path: Path):
@@ -131,50 +115,6 @@ def seen_premise_names(split_path: Path) -> set[str]:
     return seen
 
 
-def load_corpus(corpus_path: Path) -> tuple[set[str], dict[str, set[str]]]:
-    """`(exact full names, {last component: full names})` for the premise corpus.
-
-    The suffix index is what lets an abbreviated citation be resolved: a tactic that writes
-    `card_pi_const` under `open Fintype` means `Fintype.card_pi_const`, and only the tail is
-    written down.
-    """
-    exact: set[str] = set()
-    by_suffix: dict[str, set[str]] = defaultdict(set)
-    with open(corpus_path, encoding="utf-8") as fh:
-        for line in fh:
-            if not line.strip():
-                continue
-            name = json.loads(line).get("name")
-            if not name:
-                continue
-            exact.add(name)
-            by_suffix[name.rsplit(".", 1)[-1]].add(name)
-    return exact, dict(by_suffix)
-
-
-def resolve(token: str, exact: set[str], by_suffix: dict[str, set[str]]) -> set[str] | None:
-    """Full names `token` could denote, or None if it names no premise in the corpus."""
-    if token in exact:
-        return {token}
-    candidates = by_suffix.get(token)
-    return set(candidates) if candidates else None
-
-
-def cited_premises(
-    tactics, exact: set[str], by_suffix: dict[str, set[str]], drop_tactic_words: bool = False
-) -> dict[str, set[str]]:
-    """`{surface token: full names it could denote}` over every premise a proof names."""
-    out: dict[str, set[str]] = {}
-    for tactic in tactics or ():
-        for token in IDENTIFIER.findall(str(tactic)):
-            if token in out or (drop_tactic_words and token in TACTIC_WORDS):
-                continue
-            resolved = resolve(token, exact, by_suffix)
-            if resolved:
-                out[token] = resolved
-    return out
-
-
 def unseen_citations(cited: dict[str, set[str]], seen: set[str]) -> set[str]:
     """Surface tokens whose every possible resolution lies outside the retriever's training set."""
     return {tok for tok, names in cited.items() if not (names & seen)}
@@ -189,10 +129,7 @@ def run_outcomes(run_dir: Path) -> tuple[str, str, dict[str, list[str] | None]]:
     label = f"{arm}@{format_budget(n_candidates)}" if n_candidates else arm
 
     out: dict[str, list[str] | None] = {}
-    for line in (run_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
+    for row in read_jsonl(run_dir / "attempts.jsonl"):
         out[str(row["problem_id"])] = row.get("proof") if row.get("proved") else None
     return cfg.get("benchmark", "?"), label, out
 

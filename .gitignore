@@ -52,6 +52,18 @@ slurm-*.err
 
 # --- Results that DO ship (tables + figures) are whitelisted above by omission ---
 
+# --- Working notes that are NOT part of the published artefact ---
+# The repo publishes what is needed to run and reproduce, plus README.md. Supervision notes are
+# written for one meeting and go stale immediately; shipping them would put a half-current summary
+# next to the maintained one and leave a reader to guess which is authoritative.
+MEETING.md
+dissertation.md
+# Transfer staging: extracted cluster exports and copies of the benchmark files. Everything here
+# is a copy of something authoritative elsewhere, so committing it would create a second source
+# of truth for numbers that must come from results/exported.
+/scratch/
+exported.tgz
+
 # --- Editors / OS ---
 .vscode/
 .idea/

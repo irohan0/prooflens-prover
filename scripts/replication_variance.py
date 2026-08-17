@@ -67,7 +67,14 @@ from prooflens_prover.utils.logging import ensure_utf8_output  # noqa: E402
 
 #: Config keys allowed to differ between two draws of the same arm. `n_problems` can differ when a
 #: run was resumed; everything else differing means the two runs are different experiments.
-DRAW_VARYING = frozenset({"n_problems"})
+#: Config keys a genuine replicate is allowed to differ in.
+#:
+#: `lean_project` is here because node-local staging writes the Mathlib project under
+#: `/tmp/slurm.<jobid>`, so **no two cluster replicates ever share the path**. Without this
+#: exemption every real replicate is rejected and the script only ever runs on the NFS runs — which
+#: is precisely the configuration measured to change a published number (26 vs 28 on ProofNet). The
+#: environment is a variable and is reported, not one silently required to be constant.
+DRAW_VARYING = frozenset({"n_problems", "lean_project"})
 
 
 def group_draws(run_dirs) -> dict[tuple[str, str], list[Draw]]:

@@ -1,0 +1,8 @@
+{
+  "run": "results/logs/minif2f_test_li_repertoire_20260803T081033727085_aa5622e",
+  "benchmark": "minif2f_test",
+  "n_claimed": 78,
+  "n_verified": 78,
+  "n_failed": 0,
+  "failures": []
+}

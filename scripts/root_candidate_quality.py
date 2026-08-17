@@ -46,6 +46,7 @@ from prooflens_prover.eval.compare import (  # noqa: E402
     format_budget,
     permutation_p,
 )
+from prooflens_prover.utils.io import read_jsonl  # noqa: E402
 from prooflens_prover.utils.logging import ensure_utf8_output  # noqa: E402
 
 #: The depth recorded for tactics proposed at the root. `best_first_search` writes the *parent's*
@@ -67,10 +68,7 @@ def root_candidates(run_dir: Path) -> tuple[str, dict[str, list[float]]]:
     label = f"{arm}@{format_budget(n_candidates)}" if n_candidates else arm
 
     per_problem: dict[str, list[float]] = {}
-    for line in (run_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
+    for row in read_jsonl(run_dir / "attempts.jsonl"):
         logprobs = [
             float(t["logprob"])
             for t in row.get("trace") or []

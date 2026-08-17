@@ -2,8 +2,8 @@
 
 | benchmark | none (floor) | ProofLens-SV | ProofLens-LI | Δ SV vs none | Δ LI vs none | Δ LI vs SV | SV ∪ LI (oracle) |
 |---|--:|--:|--:|--:|--:|--:|--:|
-| fate_m | 39/141 (27.7%) | 46/141 (32.6%) | 46/141 (32.6%) @50k | +7 (p=0.0923) | +7 (p=0.1671) | +0 (p=1.0000) | 57/141 (40.4%) [+11] |
-| proofnet_test | 19/186 (10.2%) | 26/186 (14.0%) | 26/186 (14.0%) @50k | **+7** (p=0.0391) | **+7** (p=0.0391) | +0 (p=1.0000) | 32/186 (17.2%) [+6] |
+| fate_m | 39/141 (27.7%) | 46/141 (32.6%) | 46/141 (32.6%) @50k | +7 (p=0.0923) | +7 (p=0.2100) | +0 (p=1.0000) | 56/141 (39.7%) [+10] |
+| proofnet_test | 24/186 (12.9%) | 28/186 (15.1%) | 28/186 (15.1%) @50k | +4 (p=0.3877) | +4 (p=0.3877) | +0 (p=1.0000) | 32/186 (17.2%) [+4] |
 
 **Δ vs none** is problems gained over the no-retrieval control; **Δ LI vs SV** is the
 architecture comparison — same premise corpus, same search budget, same checkpoint

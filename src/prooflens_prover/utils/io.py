@@ -36,6 +36,38 @@ def read_jsonl(path: Path | str) -> Iterator[dict[str, Any]]:
             yield json.loads(line)
 
 
+def read_jsonl_tolerant(path: Path | str) -> tuple[list[dict[str, Any]], list[tuple[int, int]]]:
+    """Every parseable row, plus the `(line number, byte length)` of each one that is not.
+
+    **Why tolerance, when `read_jsonl` deliberately raises.** A corrupt row must not be able to
+    throw away a run that has already finished its work. Measured: ProofNet / sv / seed 6 of the
+    pass@8 sweep completed all 186 problems in 4 h 59 m, then died in its own reporting block —
+    `json.loads` over the file it had just written — because line 55 was a truncated 118 KB record.
+    Every proof was on disk and the exit status said the job had failed.
+
+    `attempts.jsonl` is appended with `O_APPEND` and an fsync per row, which makes it durable
+    against a SLURM kill but *not* against NFS, where an append that size is not atomic and
+    `results/logs` lives. So a partial row mid-file is a real state this reader has to survive.
+
+    A skipped row means one problem's outcome is unknown, which is not the same as unsolved. Callers
+    are handed the line numbers rather than a count so they can say which, and must not present a
+    rate over the remainder as if the denominator were whole. `scripts/repair_attempts.py`
+    quarantines the bad rows so a resume can re-attempt exactly those problems.
+    """
+    rows: list[dict[str, Any]] = []
+    bad: list[tuple[int, int]] = []
+    with open(path, "rb") as f:
+        for n, raw in enumerate(f, 1):
+            line = raw.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                bad.append((n, len(raw)))
+    return rows, bad
+
+
 def write_jsonl(path: Path | str, rows: Iterable[dict[str, Any]]) -> int:
     """Write rows to JSONL, creating parent directories. Returns the row count."""
     p = Path(path)

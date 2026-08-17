@@ -1,0 +1,8 @@
+{
+  "run": "results/logs/proofnet_test_li_vllm_20260809T200647071567_badc9e4",
+  "benchmark": "proofnet_test",
+  "n_claimed": 26,
+  "n_verified": 26,
+  "n_failed": 0,
+  "failures": []
+}

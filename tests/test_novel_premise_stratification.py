@@ -18,18 +18,25 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from novel_premise_stratification import (  # noqa: E402
-    cited_premises,
     fisher_exact_two_sided,
     gather,
-    load_corpus,
     permutation_diff_means,
-    resolve,
     seen_premise_names,
     stratum,
     stream_theorems,
     unseen_citations,
+)
+
+# Premise-name resolution is shared with `scripts/contamination_audit.py`, which asks the opposite
+# question of the same citation (does this premise close the theorem outright, rather than was it
+# ever trained on). It lives in the package so the two analyses cannot drift apart.
+from prooflens_prover.eval.premises import (  # noqa: E402
+    cited_premises,
+    load_corpus,
+    resolve,
 )
 
 REPO = Path(__file__).resolve().parent.parent

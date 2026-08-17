@@ -17,7 +17,6 @@ record.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 import time
 from pathlib import Path
@@ -44,7 +43,9 @@ from prooflens_prover.retrieval.base import (
     RetrievalStats,
 )
 from prooflens_prover.retrieval.bm25 import BM25Retriever
-from prooflens_prover.utils.io import JsonlAppender
+from prooflens_prover.retrieval.fusion import DEFAULT_FETCH_K
+from prooflens_prover.retrieval.fusion import MODES as FUSION_MODES
+from prooflens_prover.utils.io import JsonlAppender, read_jsonl_tolerant
 from prooflens_prover.utils.logging import ensure_utf8_output, get_logger
 from prooflens_prover.utils.manifest import RunManifest
 from prooflens_prover.utils.seed import set_global_seed
@@ -72,6 +73,11 @@ def retriever_runtime_config(arm: str) -> dict[str, int] | None:
         from prooflens_prover.retrieval.dense import SV_MAX_SEQ_LENGTH
 
         return {"max_seq_length": SV_MAX_SEQ_LENGTH}
+    if arm == "fusion":
+        # Both sub-retrievers' query-side settings, since the fusion arm encodes the query twice
+        # and neither index records how. Merged rather than nested so the field keeps the flat
+        # shape every other arm writes.
+        return {**(retriever_runtime_config("sv") or {}), **(retriever_runtime_config("li") or {})}
     return None
 
 
@@ -83,8 +89,100 @@ def effective_n_candidates(retriever) -> int | None:
     run *used*, not whether it was named on the command line — LI's measured recall@10 against exact
     MaxSim ranges from 0.443 at 1,000 to 0.979 at 50,000, so two runs differing only in this are not
     the same experiment.
+
+    The fusion arm has no index of its own, so its sub-retrievers are walked: whichever of them has
+    a first-stage budget (in practice the late-interaction one) supplies the figure. Reporting
+    `None` for a fusion run would hide the single setting most able to change its result.
     """
-    return getattr(getattr(retriever, "index", None), "n_candidates", None)
+    if (n := getattr(getattr(retriever, "index", None), "n_candidates", None)) is not None:
+        return n
+    for sub in getattr(retriever, "retrievers", ()):
+        if (n := getattr(getattr(sub, "index", None), "n_candidates", None)) is not None:
+            return n
+    return None
+
+
+def fused_corpus_id(retriever) -> str | None:
+    """The corpus id every sub-retriever agrees on, or a hard failure if they do not.
+
+    Fusing two rankings only means anything if both retrievers ranked the *same* premise set.
+    Indices built over different corpora would still fuse — producing a plausible ranking over a
+    union of two corpora that no arm in the study was ever measured against — so the mismatch is
+    refused here rather than discovered in the results table. This is `--assert-corpus-id` from
+    index build time, enforced again at run time where the two indices finally meet.
+    """
+    ids = {getattr(getattr(sub, "index", None), "corpus_id", None)
+           for sub in getattr(retriever, "retrievers", ())}
+    ids.discard(None)
+    if len(ids) > 1:
+        raise SystemExit(
+            f"fusion sub-retrievers were built over different corpora: {sorted(ids)}. "
+            "Rebuild both indices with --assert-corpus-id 276070:31db61c63a9b7ee1."
+        )
+    return ids.pop() if ids else None
+
+
+def same_index_path(was: str | None, now: str | None) -> bool:
+    """Whether two recorded index paths name the same directory, allowing for how it was spelled.
+
+    Compared by identity rather than by string because the same index has more than one legitimate
+    spelling: the sbatch passes a repo-relative `data/index/...` (it `cd`s to the repo first), a
+    hand run may pass the absolute path, and a manifest written on one platform carries that
+    platform's separator. Refusing a resume over the spelling would be a false alarm; the thing
+    worth refusing is `sv_ft_novel_lr3e6` against `li_ft_novel_bm25`, which no normalisation hides.
+    """
+    if was is None or now is None:
+        return True
+    a = was.replace("\\", "/").rstrip("/")
+    b = now.replace("\\", "/").rstrip("/")
+    return a == b or a.endswith("/" + b) or b.endswith("/" + a)
+
+
+def resume_mismatches(manifest, args, cfg, n_candidates: int | None) -> list[str]:
+    """Every way the requested configuration differs from the run being resumed.
+
+    A resumed run appends to one `attempts.jsonl` and reports one pass rate over it, so the two
+    halves have to be the same experiment. If they are not, the resulting number belongs to neither
+    half and nothing in the record says so — the manifest still describes the *original*
+    configuration, because `RunManifest.load` deliberately preserves it.
+
+    `--seed` is the check this function was written for. The seed reaches vLLM as `LLM(seed=...)`,
+    and the sbatch defaults it to 0. So resuming a seed-6 run without repeating `--seed 6` silently
+    appends seed-0 draws under a manifest that says seed 6 — two different draws stitched together,
+    presented to `passk_union.py` as one, which is exactly the double-counting its duplicate-seed
+    refusal exists to prevent. It cannot catch this one: the seed it reads is the one that lied.
+
+    The search budget is compared field by field rather than by a chosen subset, because every field
+    in it is part of the budget. Returns human-readable lines; the caller decides to refuse.
+    """
+    out: list[str] = []
+    cfgm = manifest.config
+
+    def note(label: str, was, now, why: str) -> None:
+        if was is not None and was != now:
+            out.append(f"  {label}: the run has {was!r}, you passed {now!r} — {why}")
+
+    note("seed", manifest.seed, args.seed,
+         "the sampling draw. Two draws in one attempts.jsonl is not a draw")
+    note("benchmark", cfgm.get("benchmark"), args.benchmark,
+         "a different problem set, so the pass rate would have two denominators")
+    note("arm", cfgm.get("arm"), args.arm, "two arms sharing one run is uninterpretable")
+    note("policy_kind", cfgm.get("policy_kind"), args.policy,
+         "a 7B model and a 19-tactic repertoire produce a rate belonging to neither")
+    now_index = str(args.index) if args.index else None
+    if not same_index_path(cfgm.get("index"), now_index):
+        out.append(f"  index: the run has {cfgm.get('index')!r}, you passed {now_index!r} — "
+                   "a different premise ranking for the second half of the same run")
+    note("n_candidates", cfgm.get("n_candidates"), n_candidates,
+         "LI recall@10 runs 0.443 to 0.979 across this range")
+    note("premise_free_fraction", (cfgm.get("policy_config") or {}).get("premise_free_fraction"),
+         args.premise_free_fraction, "a different prompt mix")
+
+    was_search = cfgm.get("search") or {}
+    now_search = cfg.to_dict()
+    for key in sorted(set(was_search) | set(now_search)):
+        note(f"search.{key}", was_search.get(key), now_search.get(key), "a different search budget")
+    return out
 
 
 def build_retriever(arm: str, index_dir: Path | None, stats: RetrievalStats,
@@ -124,6 +222,57 @@ def build_retriever(arm: str, index_dir: Path | None, stats: RetrievalStats,
 
     log.info("index: %d premises, corpus_id=%s", r.index.n_docs, r.index.corpus_id)
     return r
+
+
+def build_fusion_retriever(args, stats: RetrievalStats, repo_root: Path):
+    """The `fusion` arm: one retriever per architecture, merged by `FusionRetriever`.
+
+    ## Why the sub-retrievers are built separately rather than fused inside the retrieval server
+
+    Under `--retrieval-python` each arm normally runs in its own subprocess. Fusion spawns **two**
+    servers rather than teaching one server to hold both indices, and that is the cheaper design in
+    every direction: the server needs no changes, each index keeps its own CUDA context, and — the
+    reason that actually matters — the two can sit on **different devices**.
+
+    That last point is not hypothetical. Late interaction's index is 5.5 GB and single-vector's is
+    943 MB, and they share a GPU with a 7B model held at `gpu_memory_utilization=0.85`. Putting
+    single-vector on the CPU costs about 100 ms a query against late interaction's measured 930 ms,
+    which is invisible, and removes the only way this arm can fail on hardware the other arms fit.
+
+    Each sub-retriever gets its **own** `RetrievalStats`. Sharing one would count two queries per
+    `retrieve` call and report the arm as twice as busy at half the latency.
+    """
+    from prooflens_prover.retrieval.fusion import FusionRetriever
+
+    if args.index_sv is None or args.index_li is None:
+        raise SystemExit("--arm fusion requires both --index-sv and --index-li")
+
+    def one(arm: str, index_dir: Path, device: str | None, n_candidates: int | None):
+        sub_stats = RetrievalStats()
+        if args.retrieval_python is not None:
+            from prooflens_prover.retrieval.subprocess_client import spawn_retrieval_server
+
+            return spawn_retrieval_server(
+                args.retrieval_python, arm, index_dir, repo_root=repo_root,
+                n_candidates=n_candidates, checkpoint=args.checkpoint, device=device,
+                stats=sub_stats,
+            )
+        return build_retriever(arm, index_dir, sub_stats, checkpoint=args.checkpoint,
+                               device=device, n_candidates=n_candidates)
+
+    sv_device = args.fusion_sv_device or args.device
+    log.info("fusion: sv on %s, li on %s, mode=%s", sv_device, args.device, args.fusion_mode)
+    fused = FusionRetriever(
+        retrievers=(
+            one("sv", args.index_sv, sv_device, None),
+            one("li", args.index_li, args.device, args.n_candidates),
+        ),
+        mode=args.fusion_mode,
+        fetch_k=args.fusion_fetch_k,
+        stats=stats,
+    )
+    log.info("fusion corpus_id=%s", fused_corpus_id(fused))
+    return fused
 
 
 #: Policy tag -> run-name segment. The run id must distinguish a model-free run from an LLM run of
@@ -194,6 +343,7 @@ def build_policy(args, retriever):
         sampling=sampling,
         informal_names=informal,
         strip_echo=args.strip_echo,
+        premise_free_fraction=args.premise_free_fraction,
     )
 
 
@@ -202,8 +352,21 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--benchmark", required=True)
     ap.add_argument("--data-root", required=True, type=Path)
-    ap.add_argument("--arm", required=True, choices=["none", "bm25", "li", "sv"])
+    ap.add_argument("--arm", required=True, choices=["none", "bm25", "li", "sv", "fusion"])
     ap.add_argument("--index", type=Path, default=None)
+    ap.add_argument("--index-sv", type=Path, default=None,
+                    help="--arm fusion: the single-vector index")
+    ap.add_argument("--index-li", type=Path, default=None,
+                    help="--arm fusion: the late-interaction index")
+    ap.add_argument("--fusion-mode", default="rrf", choices=sorted(FUSION_MODES),
+                    help="rrf rewards consensus; interleave guarantees each retriever reaches the "
+                         "6 prompt slots. retrieval/fusion.py says why the choice is not obvious")
+    ap.add_argument("--fusion-fetch-k", type=int, default=DEFAULT_FETCH_K,
+                    help="premises requested from each sub-retriever before fusing")
+    ap.add_argument("--fusion-sv-device", default="cpu",
+                    help="device for the single-vector half of the fusion arm. Defaults to cpu: "
+                         "the two indices are 5.5GB and 943MB and share a GPU with a 7B model, and "
+                         "sv on cpu costs ~100ms against li's measured 930ms")
     ap.add_argument("--checkpoint", default=None,
                     help="query-encoder checkpoint for --arm li/sv; defaults to the one recorded "
                          "in the index metadata, which is what keeps queries and premises in step")
@@ -261,6 +424,10 @@ def main() -> None:
                          "toolchain some kernel wants to JIT (see ENGINE_ENV)")
     ap.add_argument("--sampling-seed", action="store_true",
                     help="seed vLLM sampling with --seed; off by default so pass@k stays honest")
+    ap.add_argument("--premise-free-fraction", type=float, default=0.0,
+                    help="fraction of each expansion's samples drawn from the no-retrieval prompt, "
+                         "merged into the same candidate list. Targets the 12 problems late "
+                         "interaction displaced from the control. 0.0 is the published behaviour")
     ap.add_argument("--no-strip-echo", dest="strip_echo", action="store_false",
                     help="keep echoed 'Assistant:' prefixes, as REAL-Prover does")
     ap.set_defaults(strip_echo=True)
@@ -300,7 +467,11 @@ def main() -> None:
         raise SystemExit("no problems selected — check --offset/--limit")
 
     stats = RetrievalStats()
-    if args.retrieval_python is not None and args.arm != "none":
+    if args.arm == "fusion":
+        retriever = build_fusion_retriever(
+            args, stats, repo_root=Path(__file__).resolve().parent.parent
+        )
+    elif args.retrieval_python is not None and args.arm != "none":
         from prooflens_prover.retrieval.subprocess_client import spawn_retrieval_server
 
         retriever = spawn_retrieval_server(
@@ -329,28 +500,55 @@ def main() -> None:
     n_done_before = 0
     if args.resume is not None:
         manifest = RunManifest.load(args.resume)
-        if manifest.config.get("arm") != args.arm:
+        if bad := resume_mismatches(manifest, args, cfg, effective_n_candidates(retriever)):
             raise SystemExit(
-                f"refusing to resume: that run was arm={manifest.config.get('arm')!r}, you passed "
-                f"--arm {args.arm!r}. Two arms sharing one attempts.jsonl would be uninterpretable."
-            )
-        was = manifest.config.get("policy_kind")
-        if was is not None and was != args.policy:
-            raise SystemExit(
-                f"refusing to resume: that run used --policy {was!r}, you passed "
-                f"--policy {args.policy!r}. A 7B model and a 19-tactic repertoire sharing one "
-                "attempts.jsonl would produce a pass rate belonging to neither."
+                f"refusing to resume {manifest.run_id}: the configuration you passed is not the "
+                "one that run was measuring.\n" + "\n".join(bad) +
+                "\n\nA resumed run appends to one attempts.jsonl and reports one rate over it, and "
+                "the manifest keeps the ORIGINAL configuration — so a mismatch here produces a "
+                "number that no field in the record contradicts. Re-run with the values above, or "
+                "drop --resume to start a new run."
             )
         done: set[str] = set()
         if manifest.attempts_path.exists():
-            for line in manifest.attempts_path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    done.add(json.loads(line)["problem_id"])
+            recorded, unreadable = read_jsonl_tolerant(manifest.attempts_path)
+            done = {r["problem_id"] for r in recorded}
+            if unreadable:
+                # Tolerant rather than fatal, and the problem is deliberately NOT marked done: an
+                # unreadable row is an unknown outcome, so re-attempting it is the only honest
+                # option. Raising here instead would make a run with one bad row permanently
+                # unresumable — the exact opposite of what an fsync per attempt is for.
+                log.warning(
+                    "%d row(s) in %s could not be parsed (lines %s); those problems will be "
+                    "re-attempted. The bad rows REMAIN in the file and will break this run's own "
+                    "totals at the end. Repair first:\n"
+                    "  python scripts/repair_attempts.py %s",
+                    len(unreadable), manifest.attempts_path,
+                    ", ".join(str(n) for n, _ in unreadable), manifest.run_dir,
+                )
         n_done_before = len(done)
         selected = [p for p in selected if p.id not in done]
         log.info("resuming %s: %d already recorded, %d remaining",
                  manifest.run_id, n_done_before, len(selected))
         if not selected:
+            # A resume with nothing left to do is one of two very different situations, and the
+            # difference decides whether any GPU time is owed.
+            #
+            # If the manifest has an outcome, the run is complete and this was a no-op. If it has
+            # none, the run finished every problem and then died in the reporting block — so the
+            # results are all on disk and *invisible*, because `passk_union.discover` and
+            # `build_table1.discover` both skip a run without an outcome. Resubmitting cannot fix
+            # that: it lands here again, every time. Measured on ProofNet / sv / seed 6 of the
+            # pass@8 sweep, which recorded 186 of 186 in 4 h 59 m and exited 1 after the loop.
+            if manifest.outcome is None:
+                log.warning(
+                    "nothing left to do, but %s has NO outcome: it finished all %d problems and "
+                    "died before recording them, so every table skips it. Resuming again will not "
+                    "help. Repair it on a login node in seconds:\n"
+                    "  python scripts/finalize_run.py %s",
+                    manifest.run_id, n_done_before, manifest.run_dir,
+                )
+                raise SystemExit(1)
             log.info("nothing left to do")
             return
     else:
@@ -367,7 +565,19 @@ def main() -> None:
                 "top_k": args.top_k,
                 "min_closers": args.min_closers,
                 "index": str(args.index) if args.index else None,
-                "corpus_id": getattr(getattr(retriever, "index", None), "corpus_id", None),
+                # Fusion has two of everything, and neither is `--index`. Recorded as its own
+                # field so a fusion run is never mistaken for a single-arm run whose `index` was
+                # simply omitted — and so the mode, which changes which premises reach the prompt,
+                # is in the record rather than only in the command line.
+                "fusion": (
+                    {**retriever.config(), "index_sv": str(args.index_sv),
+                     "index_li": str(args.index_li), "sv_device": args.fusion_sv_device}
+                    if args.arm == "fusion" else None
+                ),
+                "corpus_id": (
+                    fused_corpus_id(retriever) if args.arm == "fusion"
+                    else getattr(getattr(retriever, "index", None), "corpus_id", None)
+                ),
                 "encoder": getattr(
                     getattr(getattr(retriever, "index", None), "encoder", None), "to_dict",
                     lambda: None
@@ -446,11 +656,13 @@ def main() -> None:
 
     # Totals are recomputed from the attempts file, not from this session's counters, so a resumed
     # run reports the whole benchmark rather than only the part that ran after the restart.
-    rows = [
-        json.loads(line)
-        for line in manifest.attempts_path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
+    # Tolerant, because this exact line once threw away a completed run. ProofNet / sv / seed 6 of
+    # the pass@8 sweep printed all 186 problems, then raised JSONDecodeError here on a truncated
+    # 118 KB row at line 55 — after 4 h 59 m, with every proof already durable on disk. A record the
+    # aggregation cannot read is a reason to report a short denominator loudly, not to discard the
+    # work: `attempts.jsonl` is appended with O_APPEND on NFS, where an append that big is not
+    # atomic.
+    rows, unreadable = read_jsonl_tolerant(manifest.attempts_path)
     total = len(rows)
     total_proved = sum(1 for r in rows if r.get("proved"))
 
@@ -479,6 +691,12 @@ def main() -> None:
         n_this_session=len(selected),
         n_resumed=n_done_before,
         n_error=n_error,
+        # Not cosmetic: each unreadable row is a problem missing from `total`, so the rate above is
+        # over a denominator smaller than the benchmark. Downstream a missing problem reads as
+        # unsolved, which biases the arm downward — recorded so that bias is visible rather than
+        # inferred from a count that does not match the benchmark size.
+        n_unreadable_rows=len(unreadable),
+        unreadable_row_lines=[n for n, _ in unreadable] or None,
         n_stale_env_recoveries=n_stale,
         retrieval=stats.to_dict(),
         policy_stats=policy_stats,
@@ -490,6 +708,14 @@ def main() -> None:
     print(f"proved      : {total_proved}/{total}  ({100 * total_proved / max(total, 1):.1f}%)")
     if n_done_before:
         print(f"              ({len(selected)} this session, {n_done_before} resumed)")
+    if unreadable:
+        # Louder than the error warning below, because this one changes the denominator.
+        print(f"!! CORRUPT   : {len(unreadable)} row(s) unreadable at line(s) "
+              f"{', '.join(str(n) for n, _ in unreadable)} — those problems are MISSING from the "
+              f"{total} above, so this is not a rate over the whole benchmark. Repair and resume:\n"
+              f"     python scripts/repair_attempts.py {manifest.run_dir}\n"
+              f"     SEED={manifest.seed} RESUME={manifest.run_dir} ... sbatch "
+              f"slurm/prove_benchmark_llm.sbatch")
     if n_error or n_stale:
         # Loud, because the failure this guards against completed successfully and looked normal.
         print(f"!! WARNING  : {n_error} problems ended in harness ERROR "

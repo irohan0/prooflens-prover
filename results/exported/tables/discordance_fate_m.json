@@ -1,0 +1,109 @@
+{
+  "benchmark": "fate_m",
+  "arms": [
+    "sv",
+    "li@50k"
+  ],
+  "solved": {
+    "sv": 46,
+    "li@50k": 46
+  },
+  "union": 56,
+  "only_sv": {
+    "n": 10,
+    "problems": [
+      "1336",
+      "1597",
+      "1989",
+      "1998",
+      "205",
+      "380",
+      "424",
+      "4649",
+      "7125",
+      "7415"
+    ],
+    "loser_failure_modes": {
+      "no_candidates (nothing left to propose)": 4,
+      "max_expansions (searched hard, wrong direction)": 6
+    },
+    "winner_median_expansions": 12.5,
+    "winner_median_tactics_tried": 99.5,
+    "winner_median_elapsed_s": 7.9,
+    "winner_median_proof_steps": 5.5,
+    "loser_median_expansions": 64.0,
+    "one_step_corpus_citations": 1,
+    "tactic_heads": {
+      "simp": 19,
+      "rw": 12,
+      "have": 6,
+      "intro": 4,
+      "refine": 4,
+      "exact": 4,
+      "obtain": 2,
+      "apply": 2
+    },
+    "areas": {
+      "group theory": 5,
+      "ring / field": 3,
+      "set / logic": 1,
+      "other": 1
+    }
+  },
+  "only_li@50k": {
+    "n": 10,
+    "problems": [
+      "1108",
+      "1144",
+      "1581",
+      "1990",
+      "2180",
+      "326",
+      "334",
+      "378",
+      "7532",
+      "867"
+    ],
+    "loser_failure_modes": {
+      "no_candidates (nothing left to propose)": 6,
+      "max_expansions (searched hard, wrong direction)": 4
+    },
+    "winner_median_expansions": 7.0,
+    "winner_median_tactics_tried": 76.0,
+    "winner_median_elapsed_s": 9.6,
+    "winner_median_proof_steps": 4.5,
+    "loser_median_expansions": 10.0,
+    "one_step_corpus_citations": 1,
+    "tactic_heads": {
+      "simp": 12,
+      "have": 5,
+      "apply": 4,
+      "exact": 4,
+      "rw": 2,
+      "nth_rw": 2,
+      "simpa": 1,
+      "apply_fun": 1
+    },
+    "areas": {
+      "group theory": 6,
+      "ring / field": 2,
+      "other": 2
+    }
+  },
+  "all_solved_baseline": {
+    "sv": {
+      "n_solved": 46,
+      "median_expansions": 3.0,
+      "median_tactics_tried": 17.5,
+      "median_elapsed_s": 1.4,
+      "median_proof_steps": 2.0
+    },
+    "li@50k": {
+      "n_solved": 46,
+      "median_expansions": 3.0,
+      "median_tactics_tried": 26.5,
+      "median_elapsed_s": 4.5,
+      "median_proof_steps": 3.0
+    }
+  }
+}

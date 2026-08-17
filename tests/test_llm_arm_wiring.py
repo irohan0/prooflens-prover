@@ -103,12 +103,15 @@ class TestProveBenchmarkExposesThePolicy:
         assert '"policy_config": policy.config()' in src
 
     def test_resume_refuses_to_cross_policies(self):
+        # The checks themselves now live in `resume_mismatches` and are exercised behaviourally in
+        # tests/test_resume_guard.py. What this asserts is that the resume branch still *consults*
+        # them: a 7B model and a repertoire sharing one attempts.jsonl would produce a pass rate
+        # belonging to neither, and the manifest would name only the first of them.
         src = self._src()
         block = src[src.index("if args.resume is not None:"):src.index("else:\n        manifest")]
-        assert "policy_kind" in block, (
-            "resume checks the arm but not the policy; a 7B model and a repertoire sharing one "
-            "attempts.jsonl would produce a pass rate belonging to neither"
-        )
+        assert "resume_mismatches" in block and "raise SystemExit" in block
+        guard = src[src.index("def resume_mismatches"):src.index("def build_retriever")]
+        assert "policy_kind" in guard
 
     def test_model_is_required_for_the_vllm_policy_and_rejected_otherwise(self):
         src = self._src()
@@ -186,7 +189,34 @@ class TestSbatchForTheLlmArm:
         return "\n".join(out)
 
     @staticmethod
-    def _reaching(src: str, invocation: str) -> set[str]:
+    def _logical_lines(src: str) -> list[str]:
+        """Physical lines joined into logical ones, so a multi-line construct is scanned whole.
+
+        A bash array assignment may span lines:
+
+            INDEX_FLAGS=(--index-sv "$INDEX_SV" --index-li "$INDEX_LI"
+                         --fusion-mode "$FUSION_MODE")
+
+        Scanned line by line, the second line assigns nothing and the first reads only two of the
+        four variables — so `FUSION_MODE` looks unreferenced and the knob check reports it as
+        declared-but-never-passed when it is passed. Joining on unbalanced parentheses and on
+        trailing backslashes fixes that without loosening what the check demands.
+        """
+        out: list[str] = []
+        buf, depth = "", 0
+        for line in src.splitlines():
+            buf = line if not buf else f"{buf} {line.strip()}"
+            depth += line.count("(") - line.count(")")
+            if depth > 0 or line.rstrip().endswith("\\"):
+                continue
+            out.append(buf)
+            buf, depth = "", 0
+        if buf:
+            out.append(buf)
+        return out
+
+    @classmethod
+    def _reaching(cls, src: str, invocation: str) -> set[str]:
         """Variables that affect the run, following one level of indirection.
 
         A knob does not have to appear in the invocation itself: `ENFORCE_EAGER` is read by a test
@@ -199,10 +229,11 @@ class TestSbatchForTheLlmArm:
         counts as `VAR` reaching it. Iterated so a two-step derivation still resolves.
         """
         reaching = set(re.findall(r"\$\{?([A-Z_]+)", invocation))
+        lines = cls._logical_lines(src)
         for _ in range(3):
-            for line in src.splitlines():
-                assigned = set(re.findall(r"^\s*([A-Z_]+)=", line))
-                assigned |= set(re.findall(r"&&\s*([A-Z_]+)=", line))
+            for line in lines:
+                assigned = set(re.findall(r"^\s*([A-Z_]+)\+?=", line))
+                assigned |= set(re.findall(r"&&\s*([A-Z_]+)\+?=", line))
                 if assigned & reaching:
                     reaching |= set(re.findall(r"\$\{?([A-Z_]+)", line))
         return reaching
@@ -213,6 +244,51 @@ class TestSbatchForTheLlmArm:
         internal = {"REPO", "VENV", "VLLM_VENV", "STAGE_LEAN"}
         missing = sorted(declared - internal - self._reaching(src, self._invocation(src)))
         assert not missing, f"declared but never passed to prove_benchmark.py: {missing}"
+
+    def test_the_line_joiner_does_not_swallow_a_dead_knob_inside_a_multi_line_construct(self):
+        """Guards the joiner: joining lines must not make an unused variable look used.
+
+        `_logical_lines` was added so a multi-line array assignment is scanned whole. The risk is
+        that joining too greedily merges an assignment with unrelated following lines, at which
+        point any variable mentioned nearby would count as reaching the invocation.
+        """
+        src = 'DEAD="${DEAD:-x}"\nARR=(--flag "$USED"\n     --other "$ALSO")\nrun "${ARR[@]}"\n'
+        reaching = self._reaching(src, 'run "${ARR[@]}"')
+        assert {"USED", "ALSO"} <= reaching
+        assert "DEAD" not in reaching
+
+    def test_an_array_job_takes_its_seed_from_the_task_id(self):
+        """pass@k depends on the seeds being distinct, and typing eight of them is how they collide.
+
+        A duplicated seed is the same draw counted twice: it raises a problem's solved-seed count
+        without adding evidence, and inflates every pass@k built on it.
+        """
+        src = self._src()
+        assert 'SEED="$SLURM_ARRAY_TASK_ID"' in src
+        assert "--array=0-7" in src, "the array submission form belongs in the header"
+
+    def test_setting_seed_inside_an_array_job_is_refused_rather_than_resolved(self):
+        # Whichever way it were resolved, one intention would be discarded silently — and if SEED
+        # won, every task in the array would be the same draw wearing eight different job ids.
+        src = self._src()
+        i = src.index("SLURM_ARRAY_TASK_ID:-")
+        window = src[i:i + 600]
+        assert "exit 1" in window
+        assert "ERROR: SEED=" in window
+
+    def test_the_fusion_arm_passes_two_indices_and_not_a_single_one(self):
+        # Passing --index for a fusion run would record a path in the manifest that the run never
+        # opened, which reads as a mislabelled run until two other fields are checked.
+        src = self._src()
+        assert "--index-sv" in src and "--index-li" in src
+        assert 'INDEX_FLAGS=(--index "$INDEX")' in src
+
+    def test_the_search_budget_knobs_reach_the_script(self):
+        # samples_per_step is the lever against `no_candidates`; max_expansions and wall_clock have
+        # to move with it or a wider sample count runs into an unchanged per-problem time cap.
+        invocation = self._invocation(self._src())
+        for flag in ("--max-expansions", "--wall-clock", "--premise-free-fraction"):
+            assert flag in invocation
 
     def test_the_indirection_check_still_catches_a_dead_knob(self):
         """Guards the guard: a knob wired to nothing must still fail.
@@ -273,6 +349,27 @@ class TestSbatchForTheLlmArm:
         src = self._src()
         assert 'SEED="${SEED:-0}"' in src, "SEED must be settable and default to the Tier 1 draw"
         assert "--seed" in self._invocation(src), "--seed never reaches prove_benchmark.py"
+
+    def test_a_failure_to_stage_lean_aborts_instead_of_falling_back_silently(self):
+        """NFS is not an equivalent Lean environment, and the old message claimed it was.
+
+        Measured on ProofNet, same arm and same seed: 26 proved on NFS against 28 staged, because
+        NFS provoked two extra REPL restarts and their transient `Unknown proof state` failures. The
+        penalty is uneven across arms, so a silent fallback can understate one retriever. Two
+        staged runs of one arm on different nodes are byte-identical, so staging is the only thing
+        that moves the result.
+        """
+        src = self._src()
+        assert "ALLOW_NFS_FALLBACK" in src, "there must be an explicit opt-in for an NFS run"
+        # Scoped to what the job PRINTS: the comments quote the old wrong message deliberately, to
+        # record why the behaviour changed.
+        printed = [ln for ln in src.splitlines() if ln.lstrip().startswith("echo")]
+        assert not [ln for ln in printed if "still correct" in ln], (
+            "the fallback message asserted a false equivalence between NFS and staged Lean"
+        )
+        staging = src[src.index('if [ "${STAGE_LEAN:-1}" = "1" ]'):]
+        staging = staging[:staging.index("\nfi\n")]
+        assert "exit 1" in staging, "a failed staging must abort, not degrade quietly"
 
     def test_it_leaves_gpu_headroom_for_the_query_encoder(self):
         """Three consumers share the GPU, and one of them allocates after vLLM has taken its share.

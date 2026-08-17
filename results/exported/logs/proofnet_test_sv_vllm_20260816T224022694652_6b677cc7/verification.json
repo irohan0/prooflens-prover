@@ -1,0 +1,45 @@
+{
+  "run": "results/logs/proofnet_test_sv_vllm_20260816T224022694652_6b677cc7",
+  "benchmark": "proofnet_test",
+  "n_claimed": 35,
+  "n_verified": 34,
+  "n_failed": 1,
+  "failures": [
+    {
+      "problem_id": "201",
+      "proof": [
+        "let",
+        "exact Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999",
+        "have : (999 : \u211d) < 1000 := by norm_num",
+        "exact \u27e8TopologicalSpace.countableBasis K, countable_countableBasis K, isBasis_countableBasis K\u27e9"
+      ],
+      "errors": [
+        "invalid binder name 'Nat.zero_lt_succ', it must be atomic",
+        "unexpected token; expected command"
+      ],
+      "command": "open Topology Filter Real Complex TopologicalSpace Finset\nopen scoped BigOperators\n\ntheorem exercise_2_25 {K : Type*} [MetricSpace K] [CompactSpace K] :\n  \u2203 (B : Set (Set K)), Set.Countable B \u2227 IsTopologicalBasis B := by\n  let\n  exact Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : 0 < Nat.succ 999 := Nat.zero_lt_succ 999\n  have : (999 : \u211d) < 1000 := by norm_num\n  exact \u27e8TopologicalSpace.countableBasis K, countable_countableBasis K, isBasis_countableBasis K\u27e9"
+    }
+  ]
+}

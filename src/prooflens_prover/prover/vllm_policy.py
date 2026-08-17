@@ -170,6 +170,14 @@ class PolicyStats:
     n_undecodable: int = 0
     n_after_dedupe: int = 0
     total_prompt_chars: int = 0
+    #: Extra prompts issued by `premise_free_fraction` — one per expansion that split its samples.
+    #: Counted separately from `n_prompts` on purpose: `mean_candidates_per_expansion` is the health
+    #: gate read against `--samples-per-step`, and folding these into the denominator would halve it
+    #: and make a mixed run look degenerate next to an unmixed one.
+    n_premise_free_prompts: int = 0
+    #: Candidates that came from the premise-free half. The number that says whether mixing did
+    #: anything: if it is ~0 the premise prompt dominates and the fraction is wasted budget.
+    n_premise_free_candidates: int = 0
     #: Summed per-token mean log-probability over the candidates actually proposed. The quality
     #: half of the health signal; see the class docstring for why the count alone was not enough.
     total_candidate_logprob: float = 0.0
@@ -181,8 +189,15 @@ class PolicyStats:
             "n_echo_stripped": self.n_echo_stripped, "n_undecodable": self.n_undecodable,
             "n_after_dedupe": self.n_after_dedupe,
         }
+        if self.n_premise_free_prompts:
+            d["n_premise_free_prompts"] = self.n_premise_free_prompts
+            d["n_premise_free_candidates"] = self.n_premise_free_candidates
         if self.n_prompts:
-            d["mean_prompt_chars"] = round(self.total_prompt_chars / self.n_prompts, 1)
+            # Chars average over every prompt actually rendered; candidates average over
+            # expansions, which is the quantity `--samples-per-step` bounds.
+            d["mean_prompt_chars"] = round(
+                self.total_prompt_chars / (self.n_prompts + self.n_premise_free_prompts), 1
+            )
             d["mean_candidates_per_expansion"] = round(self.n_after_dedupe / self.n_prompts, 2)
         if self.n_after_dedupe:
             d["mean_candidate_logprob"] = round(
@@ -237,6 +252,21 @@ class VLLMPolicy:
     #: is our addition — arm-neutral and counted, and it converts a guaranteed-invalid tactic into a
     #: possibly-valid one. Set False for a byte-faithful reproduction of their behaviour.
     strip_echo: bool = True
+    #: Fraction of each expansion's samples drawn from a **premise-free** prompt — the `none` arm's
+    #: prompt for the same state — with the rest drawn as usual. Both sets are merged into one
+    #: candidate list, so the search is offered the union.
+    #:
+    #: This exists because retrieval *displaces* proofs under an LLM. Tier 1 measured late
+    #: interaction gaining 23 problems and losing 12 the no-retrieval control had already solved,
+    #: against single-vector's 18 and 7 — the same net +11, and the wider split is what cost late
+    #: interaction its significance. Every one of those 12 is a state where the model knew a tactic
+    #: unaided and the premise block talked it out of it. Sampling part of the expansion without
+    #: premises makes that tactic reachable again without giving up the premises that win elsewhere.
+    #:
+    #: **0.0 is byte-identical to not having this feature**: one prompt, one `generate` call, one
+    #: increment of every counter. The published Tier 1 numbers must stay reproducible, so the
+    #: default cannot be anything else.
+    premise_free_fraction: float = 0.0
     #: Set once the first prompt has been compared against the tokenizer's own `chat_template`.
     _format_checked: bool = field(default=False, repr=False)
 
@@ -257,6 +287,12 @@ class VLLMPolicy:
             # documented downward bias on the calibration gate.
             "informal_names": len(self.informal_names),
             "strip_echo": self.strip_echo,
+            "premise_free_fraction": self.premise_free_fraction,
+            # Fusion has no index, so its composition lives on the retriever rather than in the
+            # manifest's `index` field. Recorded here so `policy_config` alone identifies the arm.
+            "retriever_config": (
+                self.retriever.config() if hasattr(self.retriever, "config") else None
+            ),
         }
 
     def _with_gloss(self, premise: Premise) -> Premise:
@@ -272,33 +308,38 @@ class VLLMPolicy:
             return premise
         return replace(premise, informal_name=gloss)
 
-    def propose(
-        self, state: ProofState, n: int, context: dict[str, Any] | None = None  # noqa: ARG002
-    ) -> list[tuple[str, float]]:
-        """Up to `n` distinct `(tactic, logprob)` candidates, best first."""
-        premises: list[Premise] = (
-            self.retriever.retrieve(state.pp, k=self.top_k) if self.top_k > 0 else []
-        )
-        if self.informal_names:
-            premises = [self._with_gloss(p) for p in premises]
-        content = build_tactic_content(state.pp, premises, limit=self.prompt_limit)
-        prompt = render_chat([{"role": "user", "content": content}], self.template)
-        self.stats.n_prompts += 1
-        self.stats.total_prompt_chars += len(prompt)
+    def _render(self, state_pp: str, premises: list[Premise]) -> tuple[str, str]:
+        """`(rendered chat prompt, raw content)` for one proof state and premise list."""
+        content = build_tactic_content(state_pp, premises, limit=self.prompt_limit)
+        return render_chat([{"role": "user", "content": content}], self.template), content
 
-        if not self._format_checked:
-            # Once per run, on a real prompt. The format was wrong for an entire FATE-M run and
-            # nothing in the output said so: the model emitted fluent-looking tactic-shaped noise
-            # rather than failing. The checkpoint ships the authoritative answer, so ask it.
-            self._format_checked = True
-            checker = getattr(self.generator, "check_prompt_format", None)
-            if checker is not None and (problem := checker(prompt, content)):
-                log.warning("PROMPT FORMAT MISMATCH (template=%s): %s", self.template, problem)
+    def _split(self, n: int, have_premises: bool) -> tuple[int, int]:
+        """`(samples with premises, samples without)`.
 
+        Falls back to a single premise prompt whenever a split would be degenerate — fraction 0,
+        no premises to omit, or a rounding that leaves one side empty. A `generate` call for zero
+        samples is an error in some backends and a silent waste in the rest, and an expansion that
+        quietly used a different sample count than `--samples-per-step` would break the one health
+        gate this policy has.
+        """
+        if not have_premises or self.premise_free_fraction <= 0.0 or n < 2:
+            return n, 0
+        n_free = round(n * self.premise_free_fraction)
+        if n_free <= 0 or n_free >= n:
+            return n, 0
+        return n - n_free, n_free
+
+    def _sample_into(self, best: dict[str, float], prompt: str, n: int) -> int:
+        """Generate `n` continuations of `prompt` and merge them into `best`. Returns new keys.
+
+        Both halves of a mixed expansion go through *this* function, so the cleaning, cheat
+        rejection, undecodable filtering and best-score-wins deduplication are shared rather than
+        duplicated — a premise-free candidate is subject to exactly the same admission rules as a
+        retrieval-augmented one, which is what makes the two comparable inside one search.
+        """
         generations = self.generator.generate(prompt, n, self.sampling)
         self.stats.n_generated += len(generations)
-
-        best: dict[str, float] = {}
+        before = set(best)
         for g in generations:
             tactic, echoed = clean_tactic(g.text, strip_echo=self.strip_echo)
             if echoed:
@@ -328,17 +369,52 @@ class VLLMPolicy:
             # a single strong one purely for being sampled twice.
             if tactic not in best or score > best[tactic]:
                 best[tactic] = score
+        return len(set(best) - before)
+
+    def propose(
+        self, state: ProofState, n: int, context: dict[str, Any] | None = None  # noqa: ARG002
+    ) -> list[tuple[str, float]]:
+        """Up to `n` distinct `(tactic, logprob)` candidates, best first."""
+        premises: list[Premise] = (
+            self.retriever.retrieve(state.pp, k=self.top_k) if self.top_k > 0 else []
+        )
+        if self.informal_names:
+            premises = [self._with_gloss(p) for p in premises]
+        prompt, content = self._render(state.pp, premises)
+        self.stats.n_prompts += 1
+        self.stats.total_prompt_chars += len(prompt)
+
+        if not self._format_checked:
+            # Once per run, on a real prompt. The format was wrong for an entire FATE-M run and
+            # nothing in the output said so: the model emitted fluent-looking tactic-shaped noise
+            # rather than failing. The checkpoint ships the authoritative answer, so ask it.
+            self._format_checked = True
+            checker = getattr(self.generator, "check_prompt_format", None)
+            if checker is not None and (problem := checker(prompt, content)):
+                log.warning("PROMPT FORMAT MISMATCH (template=%s): %s", self.template, problem)
+
+        n_premise, n_free = self._split(n, have_premises=bool(premises))
+        best: dict[str, float] = {}
+        self._sample_into(best, prompt, n_premise)
+        if n_free:
+            # The `none` arm's prompt for this same state — same template, same builder, premises
+            # omitted. Rendered second so the format check above always runs on the prompt the arm
+            # is named for.
+            free_prompt, _ = self._render(state.pp, [])
+            self.stats.n_premise_free_prompts += 1
+            self.stats.total_prompt_chars += len(free_prompt)
+            self.stats.n_premise_free_candidates += self._sample_into(best, free_prompt, n_free)
 
         self.stats.n_after_dedupe += len(best)
         # Summed over the deduped candidates — what the search is actually offered. A NaN would
-        # poison the running total for the whole run, and `propose` already maps NaN to -inf below,
+        # poison the running total for the whole run, and the sort below already maps NaN to -inf,
         # so it is excluded here rather than allowed to make the manifest unreadable.
         self.stats.total_candidate_logprob += sum(
             s for s in best.values() if not math.isnan(s) and not math.isinf(s)
         )
         if not best:
             log.warning("no usable tactic from %d samples (empty=%d cheats=%d)",
-                        len(generations), self.stats.n_empty, self.stats.n_cheats)
+                        n, self.stats.n_empty, self.stats.n_cheats)
 
         # Deterministic: score descending, then tactic text, so two runs given the same generations
         # explore in the same order. `math.isnan` guard because a generator that returns NaN would

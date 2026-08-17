@@ -28,6 +28,11 @@ DATA_ROOT="${PROOFLENS_DATA_ROOT:-$HOME/data/benchmarks/REAL-Prover/Realprover/d
 export PATH="$HOME/.elan/bin:$PATH"
 export PYTHONPATH="$REPO/src"
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
+# Verification prints Lean's own error text for a proof that fails to re-elaborate, and that text is
+# full of unicode (U+2115, U+22A2, U+2260). Under SLURM stdout is a file, so Python takes the locale
+# encoding, and a batch job with LANG unset gets ASCII — where the report on a failing proof would
+# itself raise UnicodeEncodeError, losing the one message the run exists to deliver.
+export PYTHONIOENCODING="${PYTHONIOENCODING:-utf-8}"
 
 cd "$REPO" || exit 1
 PY="$VENV/bin/python"

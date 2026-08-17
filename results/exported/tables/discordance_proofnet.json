@@ -1,0 +1,93 @@
+{
+  "benchmark": "proofnet_test",
+  "arms": [
+    "sv",
+    "li@50k"
+  ],
+  "solved": {
+    "sv": 28,
+    "li@50k": 28
+  },
+  "union": 32,
+  "only_sv": {
+    "n": 4,
+    "problems": [
+      "197",
+      "243",
+      "261",
+      "316"
+    ],
+    "loser_failure_modes": {
+      "no_candidates (nothing left to propose)": 1,
+      "max_expansions (searched hard, wrong direction)": 3
+    },
+    "winner_median_expansions": 6.5,
+    "winner_median_tactics_tried": 70.5,
+    "winner_median_elapsed_s": 5.8,
+    "winner_median_proof_steps": 4.0,
+    "loser_median_expansions": 64.0,
+    "one_step_corpus_citations": 0,
+    "tactic_heads": {
+      "rw": 5,
+      "refine": 2,
+      "erw": 1,
+      "simpa": 1,
+      "simp": 1,
+      "ring": 1,
+      "norm_num": 1,
+      "obtain": 1
+    },
+    "areas": {
+      "ring / field": 3,
+      "analysis": 1
+    }
+  },
+  "only_li@50k": {
+    "n": 4,
+    "problems": [
+      "262",
+      "284",
+      "332",
+      "366"
+    ],
+    "loser_failure_modes": {
+      "no_candidates (nothing left to propose)": 2,
+      "max_expansions (searched hard, wrong direction)": 2
+    },
+    "winner_median_expansions": 1.0,
+    "winner_median_tactics_tried": 3.5,
+    "winner_median_elapsed_s": 1.3,
+    "winner_median_proof_steps": 1.0,
+    "loser_median_expansions": 33.0,
+    "one_step_corpus_citations": 1,
+    "tactic_heads": {
+      "exact": 2,
+      "rw": 2,
+      "simp": 1,
+      "symm": 1,
+      "nth_rw": 1,
+      "field_simp": 1
+    },
+    "areas": {
+      "other": 2,
+      "topology": 1,
+      "group theory": 1
+    }
+  },
+  "all_solved_baseline": {
+    "sv": {
+      "n_solved": 28,
+      "median_expansions": 1.5,
+      "median_tactics_tried": 5.0,
+      "median_elapsed_s": 0.8,
+      "median_proof_steps": 1.5
+    },
+    "li@50k": {
+      "n_solved": 28,
+      "median_expansions": 1.0,
+      "median_tactics_tried": 4.5,
+      "median_elapsed_s": 1.3,
+      "median_proof_steps": 1.0
+    }
+  }
+}

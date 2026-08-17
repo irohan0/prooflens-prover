@@ -1,0 +1,140 @@
+{
+  "run_id": "proofnet_test_sv_vllm_20260816T181723913936_6b677cc7",
+  "name": "proofnet_test_sv_vllm",
+  "seed": 3,
+  "git_commit": "6b677cc7",
+  "started_utc": "2026-08-16T18:17:23.913936+00:00",
+  "environment": {
+    "python": "3.11.15",
+    "platform": "Linux-5.14.0-611.24.1.el9_7.x86_64-x86_64-with-glibc2.34",
+    "hostname": "node849.csf3.man.alces.network",
+    "cpu_count": 48,
+    "packages": {
+      "torch": "2.11.0",
+      "transformers": "5.14.1",
+      "accelerate": "1.14.0",
+      "datasets": "5.0.1",
+      "vllm": "0.26.0",
+      "lean-interact": "0.11.5",
+      "numpy": "2.3.5",
+      "bm25s": "0.3.10"
+    },
+    "gpus": [
+      {
+        "name": "NVIDIA A100-SXM4-80GB",
+        "total_memory_gb": 79.25,
+        "capability": "8.0"
+      }
+    ],
+    "slurm": {
+      "SLURM_CPUS_ON_NODE": "8",
+      "SLURM_JOB_PARTITION": "gpuA",
+      "SLURM_ARRAY_TASK_ID": "3",
+      "SLURM_JOB_ID": "18677351",
+      "SLURM_JOB_NAME": "pl_llm",
+      "SLURM_JOB_NODELIST": "node849"
+    },
+    "lean": "Lean (version 4.33.0, x86_64-unknown-linux-gnu, commit d8b18978322de05a8f3dba51ef03cf5461676c17, Release)"
+  },
+  "config": {
+    "benchmark": "proofnet_test",
+    "arm": "sv",
+    "policy": "vllm+sv",
+    "policy_kind": "vllm",
+    "policy_config": {
+      "policy": "vllm",
+      "top_k": 10,
+      "prompt_limit": 6,
+      "template": "qwen_chatml",
+      "sampling": {
+        "temperature": 1.5,
+        "top_p": 0.9,
+        "max_tokens": 256,
+        "stop": [
+          "\nUser:",
+          "\nSTATE:",
+          "<\uff5cend\u2581of\u2581sentence\uff5c>"
+        ],
+        "seed": null,
+        "logprobs": 1,
+        "turn_end_tokens": [
+          "<|im_end|>"
+        ]
+      },
+      "retriever": "sv",
+      "informal_names": 187540,
+      "strip_echo": true,
+      "premise_free_fraction": 0.25,
+      "retriever_config": null
+    },
+    "top_k": 10,
+    "min_closers": 8,
+    "index": "data/index/sv_ft_novel_lr3e6",
+    "fusion": null,
+    "corpus_id": "276070:31db61c63a9b7ee1",
+    "encoder": null,
+    "retriever_runtime": {
+      "max_seq_length": 512
+    },
+    "retrieval_transport": "subprocess",
+    "retrieval_python": "/mnt/iusers01/fse-ugpgt01/mace01/n80967ri/venvs/plprover/bin/python",
+    "n_candidates": null,
+    "n_problems": 186,
+    "offset": 0,
+    "search": {
+      "max_expansions": 64,
+      "samples_per_step": 32,
+      "max_depth": 32,
+      "wall_clock_s": 600.0,
+      "tactic_timeout": 60.0,
+      "length_penalty": 0.5,
+      "dedupe_states": true
+    },
+    "lean_project": "/tmp/slurm.18677351/prooflens_lean/mathlib_v4160",
+    "lean_version": null
+  },
+  "outcome": {
+    "finished_utc": "2026-08-16T22:17:26.904331+00:00",
+    "n_problems": 186,
+    "n_proved": 35,
+    "pass_rate": 0.1882,
+    "elapsed_s": 14348.9,
+    "n_this_session": 186,
+    "n_resumed": 0,
+    "n_error": 8,
+    "n_stale_env_recoveries": 4,
+    "retrieval": {
+      "n_queries": 7476,
+      "total_latency_s": 260.312,
+      "mean_latency_ms": 34.82,
+      "mean_premises_returned": 10.0
+    },
+    "policy_stats": {
+      "n_prompts": 7476,
+      "n_generated": 239232,
+      "n_empty": 9,
+      "n_cheats": 0,
+      "n_echo_stripped": 0,
+      "n_undecodable": 730,
+      "n_after_dedupe": 178316,
+      "n_premise_free_prompts": 7476,
+      "n_premise_free_candidates": 41792,
+      "mean_prompt_chars": 1067.9,
+      "mean_candidates_per_expansion": 23.85,
+      "mean_candidate_logprob": -1.091,
+      "cheat_rate": 0.0,
+      "empty_rate": 0.0
+    },
+    "generator_stats": {
+      "model": "/mnt/iusers01/fse-ugpgt01/mace01/n80967ri/scratch/models/REAL-Prover-v1",
+      "engine_env": {
+        "VLLM_ENABLE_V1_MULTIPROCESSING": "0",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+        "VLLM_USE_FLASHINFER_SAMPLER": "0"
+      },
+      "max_prompt_tokens_seen": 3840,
+      "truncate_prompt_tokens": 3840,
+      "n_prompts_truncated": 4
+    }
+  }
+}

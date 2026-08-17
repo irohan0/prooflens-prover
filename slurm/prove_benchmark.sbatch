@@ -62,15 +62,27 @@ echo
 # that has been measured at 439 s (4 cores), 691 s (1 core), and >900 s on a contended node — where
 # it exceeded the header timeout and killed job 18165549 outright. Every worker pays it once.
 #
-# Staging is an OPTIMISATION and must never be able to break a run: the script exits non-zero
-# without side effects if it cannot stage, and we fall back to the NFS path.
+# Staging was described here as an OPTIMISATION that "must never be able to break a run", and the
+# fallback message claimed NFS was "slower warm-up, still correct". Both were wrong, and the LLM arm
+# paid for it: on ProofNet, the same arm at the same seed proved 26 under NFS and 28 staged, because
+# NFS provoked 2 extra REPL restarts and their transient `Unknown proof state` failures. The penalty
+# is also uneven across arms, so a mixed run set can understate one of them.
+#
+# A failure to stage therefore ABORTS. Set ALLOW_NFS_FALLBACK=1 to accept a run on NFS, and record
+# that it is not comparable to a staged one.
 # ---------------------------------------------------------------------------------------------
 if [ "${STAGE_LEAN:-1}" = "1" ]; then
     if STAGED=$(bash scripts/stage_lean_project.sh "$LEAN_PROJECT"); then
         echo "using node-local Lean project: $STAGED"
         LEAN_PROJECT="$STAGED"
+    elif [ "${ALLOW_NFS_FALLBACK:-0}" = "1" ]; then
+        echo "WARNING: staging failed; running against NFS because ALLOW_NFS_FALLBACK=1."
+        echo "         Not comparable to a staged run — expect extra REPL restarts."
     else
-        echo "staging unavailable — using $LEAN_PROJECT over NFS (slower warm-up, still correct)"
+        echo "ERROR: could not stage Lean node-local, and NFS changes the result." >&2
+        echo "       Measured: 26 vs 28 proved on ProofNet for the same arm and seed." >&2
+        echo "       Re-queue, or set ALLOW_NFS_FALLBACK=1 to accept a non-comparable run." >&2
+        exit 1
     fi
 fi
 echo

@@ -1,0 +1,8 @@
+{
+  "run": "results/logs/proofnet_test_li_repertoire_20260803T081033728497_aa5622e",
+  "benchmark": "proofnet_test",
+  "n_claimed": 12,
+  "n_verified": 12,
+  "n_failed": 0,
+  "failures": []
+}

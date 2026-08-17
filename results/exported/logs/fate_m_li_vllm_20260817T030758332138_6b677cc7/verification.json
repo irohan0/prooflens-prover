@@ -1,0 +1,8 @@
+{
+  "run": "results/logs/fate_m_li_vllm_20260817T030758332138_6b677cc7",
+  "benchmark": "fate_m",
+  "n_claimed": 56,
+  "n_verified": 56,
+  "n_failed": 0,
+  "failures": []
+}

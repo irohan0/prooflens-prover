@@ -15,6 +15,17 @@
 #
 #   EXTRA="--limit 5" BENCHMARK=fate_m ARM=li N_CANDIDATES=50000 sbatch ...
 #
+# ## pass@k: submit the seeds as an ARRAY, do not type them
+#
+#   BENCHMARK=proofnet_test ARM=li N_CANDIDATES=50000 SAMPLES=32 \
+#       sbatch --array=0-7 -p gpuA -A gpu-fse-ugpgt01 -G 1 slurm/prove_benchmark_llm.sbatch
+#
+# `SEED` is taken from `SLURM_ARRAY_TASK_ID`, so eight independent draws come from one submission.
+# Typing eight `SEED=n sbatch` lines by hand is how two runs end up sharing a seed — which is the
+# same draw counted twice, raising a problem's solved-seed count without adding any evidence and
+# inflating every pass@k built on it. `scripts/passk_union.py` refuses a duplicate outright; this
+# makes it hard to create one in the first place. Setting SEED *and* --array is refused below.
+#
 # ## Two virtualenvs, and two PROCESSES
 #
 #     vllm 0.26.0   requires transformers>=5.5.3
@@ -104,7 +115,47 @@ N_CANDIDATES="${N_CANDIDATES:-}"
 # is one draw and therefore carries no estimate of its own variance -- see
 # `scripts/replication_variance.py`. Was previously not settable here at all, so every run silently
 # took argparse's default.
+#
+# Under `--array`, the task id IS the seed. Setting both is refused rather than resolved: whichever
+# way it were resolved, one of the two intentions would be silently discarded, and if SEED won then
+# every task in the array would be the same draw wearing eight different job ids.
+if [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
+    if [ -n "${SEED:-}" ]; then
+        echo "ERROR: SEED=$SEED was set inside an array job (task $SLURM_ARRAY_TASK_ID)." >&2
+        echo "       Under --array the task id is the seed. Drop SEED= from the submission." >&2
+        exit 1
+    fi
+    SEED="$SLURM_ARRAY_TASK_ID"
+fi
 SEED="${SEED:-0}"
+# Search budget. Raising SAMPLES is the lever that attacks `no_candidates`, which is the largest
+# single failure mode on ProofNet (42% of problems) and one that more expansions cannot touch --
+# the frontier empties because nothing sampled made progress, not because the budget ran out.
+MAX_EXPANSIONS="${MAX_EXPANSIONS:-64}"
+WALL_CLOCK="${WALL_CLOCK:-600}"
+# Fraction of each expansion sampled from the NO-RETRIEVAL prompt, merged into the same candidate
+# list. Targets the 12 problems late interaction displaced from the control. 0 is published behaviour.
+PREMISE_FREE_FRACTION="${PREMISE_FREE_FRACTION:-0}"
+# ARM=fusion only: one index per architecture. Single-vector defaults to the CPU because the two
+# indices are 5.5 GB and 943 MB and share a GPU with a 7B model.
+INDEX_SV="${INDEX_SV:-data/index/sv_ft_novel_lr3e6}"
+INDEX_LI="${INDEX_LI:-data/index/li_ft_novel_bm25}"
+FUSION_MODE="${FUSION_MODE:-rrf}"
+FUSION_SV_DEVICE="${FUSION_SV_DEVICE:-cpu}"
+# Continue an interrupted run: RESUME=results/logs/<run_id>. Problems already in its attempts.jsonl
+# are skipped, the rest are appended to the SAME run, and the manifest keeps its original id.
+#
+# Every configuration value must match the run being resumed — `prove_benchmark.py` refuses the
+# submission otherwise, `--seed` included. That check is the reason RESUME is plumbed here rather
+# than passed through EXTRA: this script defaults SEED to 0, so `EXTRA="--resume ..."` on a seed-6
+# run would have quietly continued it as seed 0.
+RESUME="${RESUME:-}"
+if [ -n "$RESUME" ] && [ -n "${SLURM_ARRAY_TASK_ID:-}" ]; then
+    echo "ERROR: RESUME=$RESUME was set inside an array job (task $SLURM_ARRAY_TASK_ID)." >&2
+    echo "       Every task would append to that one run's attempts.jsonl, so eight seeds would" >&2
+    echo "       be recorded as one. Resume the seeds one at a time: SEED=n RESUME=... sbatch" >&2
+    exit 1
+fi
 EXTRA="${EXTRA:-}"
 
 export PATH="$HOME/.elan/bin:$PATH"
@@ -113,6 +164,13 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 # vLLM's own progress bars are noise in a SLURM log and hide the search's own logging.
 export VLLM_LOGGING_LEVEL="${VLLM_LOGGING_LEVEL:-WARNING}"
 export TOKENIZERS_PARALLELISM=false
+# Lean is a unicode language: goal states, tactic arguments and error messages carry the likes of
+# N, |-, /= as U+2115, U+22A2, U+2260. SLURM redirects stdout to a file, so Python takes its encoding
+# from the locale, and a batch job with LANG unset gets ASCII — where printing any of those raises
+# UnicodeEncodeError and kills a job that had already done all of its work. The `#SBATCH --output`
+# comment at the top of this file records that an encoding traceback once hid for a full cycle; this
+# is the other half of that fix. One line, and it removes the whole class.
+export PYTHONIOENCODING="${PYTHONIOENCODING:-utf-8}"
 
 cd "$REPO"
 mkdir -p results/logs
@@ -139,34 +197,74 @@ echo "=== environment ==="
 echo "host      : $(hostname)"
 echo "git sha   : $(git -C "$REPO" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 echo "gpu       : $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo none)"
-echo "benchmark : $BENCHMARK | arm: $ARM | index: $INDEX"
+if [ "$ARM" = "fusion" ]; then
+    echo "benchmark : $BENCHMARK | arm: fusion($FUSION_MODE) | sv: $INDEX_SV ($FUSION_SV_DEVICE)"
+    echo "            li: $INDEX_LI"
+else
+    echo "benchmark : $BENCHMARK | arm: $ARM | index: $INDEX"
+fi
 echo "model     : $MODEL"
 echo "n_cand    : ${N_CANDIDATES:-(index default)}"
 echo "sampling  : $SAMPLES samples/step, temp $TEMPERATURE, top_p $TOP_P, max_tokens $MAX_TOKENS"
-echo "seed      : $SEED  (the sampling draw; replicates differ ONLY here)"
+echo "search    : $MAX_EXPANSIONS expansions, ${WALL_CLOCK}s/problem, premise_free=$PREMISE_FREE_FRACTION"
+[ -n "$RESUME" ] && echo "resume    : $RESUME  (config must match that run exactly, seed included)"
+true
+echo "seed      : $SEED  (the sampling draw; replicates differ ONLY here)${SLURM_ARRAY_TASK_ID:+  [array task]}"
 echo "template  : $TEMPLATE  (watch the log for 'PROMPT FORMAT MISMATCH')"
 echo "retrieval : $RETRIEVAL_PYTHON (separate process)"
 echo "vllm      : $("$PY" -c 'import vllm; print(vllm.__version__)' 2>&1 | tail -1)"
 echo
 
-# Same node-local staging as the model-free arm: `import Mathlib` from NFS has been measured at
-# 439-691 s and once exceeded the header timeout outright. Never allowed to break a run.
+# Node-local staging: `import Mathlib` from NFS has been measured at 439-691 s against 158 s
+# node-local, and once exceeded the header timeout outright.
+#
+# This used to fall back to NFS with the message "slower warm-up, still correct". That parenthesis
+# was WRONG and it cost a published number. Measured on ProofNet, same arm, same seed, one run
+# staged and one not:
+#
+#   node-local : 28 proved, 4 errors, 0 REPL restarts   (the 4 are the statements that genuinely
+#   NFS        : 26 proved, 6 errors, 2 REPL restarts    do not elaborate under v4.16.0)
+#
+# The two extra NFS errors are transient `Unknown proof state` failures from restarts that
+# node-local never needs. Worse, the penalty is uneven across arms — ProofNet took 2 restarts on the
+# li arm and 1 on sv — so a mixed or NFS-wide run set can silently understate one retriever. Two
+# node-local runs of one arm on different nodes are byte-identical, so with staging the harness is
+# deterministic and NFS is the only thing that moves it.
+#
+# So a failure to stage now ABORTS rather than degrading quietly. Set ALLOW_NFS_FALLBACK=1 to accept
+# a run whose Lean lives on NFS, and record in the write-up that it is not comparable to a staged one.
 if [ "${STAGE_LEAN:-1}" = "1" ]; then
     if STAGED=$(bash scripts/stage_lean_project.sh "$LEAN_PROJECT"); then
         echo "using node-local Lean project: $STAGED"
         LEAN_PROJECT="$STAGED"
+    elif [ "${ALLOW_NFS_FALLBACK:-0}" = "1" ]; then
+        echo "WARNING: staging failed; running against NFS at $LEAN_PROJECT because"
+        echo "         ALLOW_NFS_FALLBACK=1. This run is NOT comparable to a staged one:"
+        echo "         expect extra REPL restarts and transient 'Unknown proof state' errors."
     else
-        echo "staging unavailable — using $LEAN_PROJECT over NFS (slower warm-up, still correct)"
+        echo "ERROR: could not stage Lean node-local, and NFS changes the result." >&2
+        echo "       Measured: 26 vs 28 proved on ProofNet for the same arm and seed." >&2
+        echo "       Re-queue, or set ALLOW_NFS_FALLBACK=1 if you accept a non-comparable run." >&2
+        exit 1
     fi
 fi
 echo
+
+# The fusion arm takes two indices and no `--index`; passing one would put a path in the manifest's
+# `index` field that the run never opened, which is exactly the cosmetic defect the `none` arm has
+# and that reads as a mislabelled run until two other fields are checked.
+INDEX_FLAGS=(--index "$INDEX")
+if [ "$ARM" = "fusion" ]; then
+    INDEX_FLAGS=(--index-sv "$INDEX_SV" --index-li "$INDEX_LI"
+                 --fusion-mode "$FUSION_MODE" --fusion-sv-device "$FUSION_SV_DEVICE")
+fi
 
 # shellcheck disable=SC2086  # EXTRA and EAGER_FLAG are deliberately word-split; empty adds nothing
 "$PY" scripts/prove_benchmark.py \
     --policy vllm \
     --benchmark "$BENCHMARK" \
     --arm "$ARM" \
-    --index "$INDEX" \
+    "${INDEX_FLAGS[@]}" \
     --model "$MODEL" \
     --informal-names "$INFORMAL_NAMES" \
     --retrieval-python "$RETRIEVAL_PYTHON" \
@@ -183,7 +281,11 @@ echo
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --device "$DEVICE" \
     --seed "$SEED" \
+    --max-expansions "$MAX_EXPANSIONS" \
+    --wall-clock "$WALL_CLOCK" \
+    --premise-free-fraction "$PREMISE_FREE_FRACTION" \
     ${N_CANDIDATES:+--n-candidates "$N_CANDIDATES"} \
+    ${RESUME:+--resume "$RESUME"} \
     $EAGER_FLAG \
     $EXTRA
 

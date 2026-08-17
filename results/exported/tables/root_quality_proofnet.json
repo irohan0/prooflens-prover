@@ -1,0 +1,105 @@
+{
+  "arms": [
+    {
+      "arm": "none",
+      "n_problems": 182,
+      "n_candidates": 2111,
+      "mean_logprob": -1.0606,
+      "mean_best_logprob": -0.1681
+    },
+    {
+      "arm": "sv",
+      "n_problems": 182,
+      "n_candidates": 2077,
+      "mean_logprob": -1.0318,
+      "mean_best_logprob": -0.1498
+    },
+    {
+      "arm": "li@50k",
+      "n_problems": 182,
+      "n_candidates": 2063,
+      "mean_logprob": -0.9922,
+      "mean_best_logprob": -0.1612
+    }
+  ],
+  "comparisons": [
+    {
+      "contrast": "sv vs none",
+      "statistic": "mean",
+      "n_problems": 182,
+      "mean_difference": 0.028872319835793817,
+      "ci95": [
+        -0.040504005089799164,
+        0.0991805194692052
+      ],
+      "p_permutation": 0.43145685431456854,
+      "significant": false,
+      "borderline": false
+    },
+    {
+      "contrast": "sv vs none",
+      "statistic": "best",
+      "n_problems": 182,
+      "mean_difference": 0.018218609276589554,
+      "ci95": [
+        0.003285458397683068,
+        0.034208500866395306
+      ],
+      "p_permutation": 0.0225977402259774,
+      "significant": true,
+      "borderline": false
+    },
+    {
+      "contrast": "li@50k vs none",
+      "statistic": "mean",
+      "n_problems": 182,
+      "mean_difference": 0.09046694774311916,
+      "ci95": [
+        0.02586640432796676,
+        0.1555939779435815
+      ],
+      "p_permutation": 0.0071992800719928,
+      "significant": true,
+      "borderline": false
+    },
+    {
+      "contrast": "li@50k vs none",
+      "statistic": "best",
+      "n_problems": 182,
+      "mean_difference": 0.006888375980058035,
+      "ci95": [
+        -0.011279949821488135,
+        0.02532697135693096
+      ],
+      "p_permutation": 0.4617538246175382,
+      "significant": false,
+      "borderline": false
+    },
+    {
+      "contrast": "li@50k vs sv",
+      "statistic": "mean",
+      "n_problems": 182,
+      "mean_difference": 0.061594627907325346,
+      "ci95": [
+        -0.009137594474042035,
+        0.13178412728988656
+      ],
+      "p_permutation": 0.0938906109389061,
+      "significant": false,
+      "borderline": false
+    },
+    {
+      "contrast": "li@50k vs sv",
+      "statistic": "best",
+      "n_problems": 182,
+      "mean_difference": -0.01133023329653152,
+      "ci95": [
+        -0.030589485074275034,
+        0.007053857218170189
+      ],
+      "p_permutation": 0.24787521247875213,
+      "significant": false,
+      "borderline": false
+    }
+  ]
+}

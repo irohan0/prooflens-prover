@@ -1,0 +1,3 @@
+{"problem_id": "185", "source": "proofnet_test", "arm": "fusion", "status": "exhausted", "proved": false, "proof": null, "n_expansions": 64, "n_tactics_tried": 855, "n_lean_calls": 855, "elapsed_s": 158.855, "limit_hit": "max_expansions", "error": null}
+{"problem_id": "186", "source": "proofnet_test", "arm": "fusion", "status": "exhausted", "proved": false, "proof": null, "n_expansions": 64, "n_tactics_tried": 868, "n_lean_calls": 868, "elapsed_s": 127.224, "limit_hit": "max_expansions", "error": null}
+{"problem_id": "187", "source": "proofnet_test", "arm": "fusion", "status": "exhausted", "proved": false, "proof": null, "n_expansions": 64, "n_tactics_tried": 853, "n_lean_calls": 853, "elapsed_s": 127.986, "limit_hit": "max_expansions", "error": null}
