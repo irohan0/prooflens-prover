@@ -530,6 +530,18 @@ Every run writes a manifest — config, seed, git SHA (with a `-dirty` marker), 
 version, hardware, SLURM job id — **before** doing any work, so a job killed by the scheduler still
 leaves a record of what it attempted.
 
+**Three shipped tables are superseded and must not be cited.** They are kept because they *are* the
+evidence for the execution-environment correction — the pair of numbers before and after node-local
+Lean staging is the finding:
+
+| file | holds | superseded by |
+|---|---|---|
+| `results/tables/tier1/table1.*` | the 2026-08-09 NFS runs: ProofNet **19 / 26 / 26** | `results/tables/table1.*` (24 / 28 / 28) |
+| `results/tables/arm_distinctness_*.json` | proof-overlap on those same NFS runs | recomputed on the staged runs by `scripts/check_readme.py` (16.7% / 37.5%) |
+
+Everything quoted in this README comes from the staged run set, and `check_readme.py` refuses the
+superseded numbers if one ever reappears in the prose.
+
 ## Acknowledgements
 
 Benchmarks, prompt, search configuration and reference numbers from
