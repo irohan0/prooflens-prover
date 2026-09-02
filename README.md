@@ -462,36 +462,56 @@ stage, and passing one aborts the run) and for `BENCHMARK=fate_m`. Four submissi
 
 **5. Verify, then analyse** — this works on the shipped records with no GPU and no Lean.
 
-```bash
-# Every claimed proof is re-elaborated from the benchmark statement in a fresh Lean environment,
-# by code that shares nothing with the search but the cheat-token regex.
-python scripts/verify_proofs.py --run results/exported/logs/<run_id> \
-    --data-root <REAL-Prover>/data --lean-project ~/lean/mathlib_v4160
+Every command below was run against a fresh clone of this repository and reproduces the number
+beside it exactly.
 
-# The Tier 1 headline table. Both filters are load-bearing against the exported records: the
-# pass@8 sweep and the 60-problem budget pilot are *newer* than the Tier 1 runs, so "most recent
-# per (benchmark, arm)" would otherwise hand them the cells and print a plausible, wrong table.
-# The script refuses either mistake rather than relying on you remembering the flags.
-python scripts/build_table1.py --policy vllm --results-root results/exported/logs     --match search.samples_per_step=16 --full-benchmarks
-python scripts/compare_arms.py --pooled                             # paired significance
-python scripts/passk_union.py --results-root results/exported/logs \
+```bash
+L=results/exported/logs
+
+# --- Tier 1: 39/46/46 and 24/28/28, the table in the Results section ---------------------------
+python scripts/build_table1.py --policy vllm --results-root $L \
+    --match search.samples_per_step=16 --full-benchmarks
+
+# --- the architecture null: +0 of 327, 14 gained / 14 lost, p = 1.0000 -------------------------
+python scripts/compare_arms.py \
+    --baseline  $L/fate_m_sv_vllm_20260810T175054635051_d7fb3c34-dirty \
+    --treatment $L/fate_m_li_vllm_20260810T185411879518_d7fb3c34-dirty \
+    --baseline  $L/proofnet_test_sv_vllm_20260811T053724895586_ab99690c-dirty \
+    --treatment $L/proofnet_test_li_vllm_20260810T193834850025_d7fb3c34-dirty
+
+# --- pass@8: ProofNet ensemble 44/186 = 23.7% at 32,768 generations/problem --------------------
+python scripts/passk_union.py --benchmark proofnet_test --results-root $L \
     --match search.samples_per_step=32 \
-    --match policy_config.premise_free_fraction=0.25                # coverage curves, pass@k
-python scripts/budget_matched.py --results-root results/exported/logs \
-    --match search.samples_per_step=32 \
-    --match policy_config.premise_free_fraction=0.25                # the equal-budget control
-python scripts/make_figures.py                                      # all 17 figures -> figures/
+    --match policy_config.premise_free_fraction=0.25 \
+    --match n_problems=186                       # and n_problems=141 for --benchmark fate_m
+
+# --- the equal-budget control: ensemble@4 - li@8 = +2.87, CI [-2.34, +8.54], p = 0.3251 --------
+python scripts/budget_matched.py --results-root $L \
+    --match search.samples_per_step=32 --match policy_config.premise_free_fraction=0.25
+
+python scripts/make_figures.py                   # all 17 figures -> figures/
+python scripts/check_readme.py                   # re-derives all 100 numbers in this file
+
+# Every claimed proof is re-elaborated from the benchmark statement in a fresh Lean environment,
+# by code that shares nothing with the search but the cheat-token regex. Needs Lean.
+python scripts/verify_proofs.py --run $L/<run_id> \
+    --data-root <REAL-Prover>/data --lean-project ~/lean/mathlib_v4160
 ```
 
-**The `--match` filters are load-bearing.** The budget pilot measured its configuration on ProofNet's
-first 60 problems, so filtering on budget alone would drag a 60-problem subset into an eight-seed
-estimate. `passk_union` refuses that as a duplicated seed — but the refusal is the only thing standing
-between a subset run and the headline table.
+**Every `--match` filter above is load-bearing, and each one has already caused a wrong number
+here.** The export holds three systems in one directory: Tier 1 at 64 × 16, the pass@8 sweep at
+64 × 32, and a budget pilot over ProofNet's **first 60 problems** — and the pilot and the sweep are
+*newer* than the Tier 1 runs whose cells they would take. Drop `--match search.samples_per_step=16`
+and Table 1 rebuilds out of sweep seeds; drop `--match n_problems=186` and a 60-problem subset
+enters an eight-seed pass@k estimate. The scripts refuse both rather than relying on you
+remembering, but the refusal is the last line of defence, not the first.
 
-**Four fusion runs ship without `verification.json`** (the export ran before verification finished on
-the cluster), so `passk_union --arm fusion` needs `--allow-unverified`. Fusion's numbers are identical
-either way: both rejected proofs are `calc` serialisation failures solved by other fusion seeds, so
-the union is 64 with and without the discount.
+**Four fusion runs ship without `verification.json`**, so any command that would include the fusion
+arm needs `--allow-unverified`. The commands above exclude it by benchmark and problem count.
+
+Those four fusion runs lack verification because the export ran before verification finished on the
+cluster. Fusion's numbers are identical either way: both rejected proofs are `calc` serialisation
+failures solved by other fusion seeds, so the union is 64 with and without the discount.
 
 **Tests:** `pytest` — 1,071 hermetic tests plus 10 live-Lean tests that skip unless
 `PROOFLENS_LEAN_PROJECT` points at a pre-built Mathlib. `ruff check .` for lint.

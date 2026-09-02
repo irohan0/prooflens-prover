@@ -56,7 +56,7 @@ BENCHMARKS = (("proofnet_test", 186), ("fate_m", 141))
 #: against. Taken from the runs themselves, not from prose, but stated here because the export also
 #: contains *replicates* of those runs: a naive union over everything at 16 samples silently reports
 #: a multi-seed figure as the published single-seed one, which inflates the baseline and understates
-#: the gain. See dissertation.md §3.
+#: the gain. See the README's Tier 1 table.
 PUBLISHED_PASS1_UNION = {"proofnet_test": 32, "fate_m": 56}
 
 

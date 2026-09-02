@@ -202,7 +202,7 @@ def main() -> None:
     for name in (f"li@{2 * args.k}", f"sv@{2 * args.k}"):
         report(f"{ekey} - {name}", cat[ekey], cat[name], rng, args.n_boot, args.n_perm)
     print("\n  A second retriever is worth the difference above; a second SEED of the same\n"
-          "  retriever is worth the rest of what the raw union reports. dissertation.md §8.4")
+          "  retriever is worth the rest of what the raw union reports. See the README.")
 
 
 if __name__ == "__main__":

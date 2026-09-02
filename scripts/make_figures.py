@@ -6,7 +6,7 @@
     python scripts/make_figures.py --list                # names and the section each belongs to
 
 PNG at 300 dpi is the only artefact: high enough for print inclusion, and one format means one
-thing to keep in step with the text. Captions live in `dissertation.md` beside each reference.
+thing to keep in step with the text. Captions live beside each reference in the write-up.
 
 Numbering follows the dissertation's own order, so `figNN` is also its position in the report:
 
