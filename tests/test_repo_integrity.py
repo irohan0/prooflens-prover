@@ -256,13 +256,20 @@ class TestPublishAllowlist:
     The invariant worth testing statically is that the allowlist cannot sweep in something the
     forbidden list is meant to stop. `publish.sh` re-checks at run time and refuses to push, but by
     then the tree is built and the failure is confusing.
+
+    Skipped where `publish.sh` is absent. The script belongs to the private tree and is not itself
+    allowlisted, so a clone of the *published* repo has these tests and not their subject — and a
+    fresh clone must have a green suite, or "the tests pass" stops meaning anything to a reader.
     """
 
     @staticmethod
     def _array(name: str) -> list[str]:
         import re
 
-        src = (REPO_ROOT / "publish.sh").read_text(encoding="utf-8")
+        script = REPO_ROOT / "publish.sh"
+        if not script.exists():
+            pytest.skip("publish.sh is not part of the published tree")
+        src = script.read_text(encoding="utf-8")
         body = re.search(rf"^{name}=\((.*?)^\)", src, flags=re.S | re.M)
         assert body, f"{name}=( ... ) not found in publish.sh"
         return [w.strip().strip("'\"") for w in body.group(1).split() if not w.startswith("#")]
