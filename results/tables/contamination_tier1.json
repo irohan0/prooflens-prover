@@ -1,0 +1,96 @@
+{
+  "fate_m": {
+    "none": {
+      "solved": 39,
+      "one_step_corpus_answers": 3,
+      "fraction_of_solved": 0.0769,
+      "won_vs_control": null,
+      "won_vs_control_by_one_step_citation": null,
+      "citations": {
+        "273": "exact sup_le h\u2081 h\u2082",
+        "544": "exact conj_pow",
+        "917": "exact inferInstance"
+      }
+    },
+    "sv": {
+      "solved": 46,
+      "one_step_corpus_answers": 10,
+      "fraction_of_solved": 0.2174,
+      "won_vs_control": 10,
+      "won_vs_control_by_one_step_citation": [
+        "1569",
+        "1595",
+        "1998",
+        "2880",
+        "384"
+      ],
+      "citations": {
+        "1569": "exact Sylow.normalizer_normalizer P",
+        "1595": "exact mul_left_cancel\u2080 h\u2081.1 h\u2081.2",
+        "1998": "exact Commute.isNilpotent_add (Commute.all a b) h\u2081 h\u2082",
+        "252": "exact pow_eq_zero (n := n) eq",
+        "273": "exact sup_le h\u2081 h\u2082",
+        "282": "apply eq_bot_or_eq_top",
+        "2880": "exact Subgroup.center_le_normalizer",
+        "384": "apply Equiv.Perm.lcm_cycleType",
+        "544": "exact conj_pow",
+        "968": "exact Eq.symm (orderOf_inv a)"
+      }
+    },
+    "li@50k": {
+      "solved": 46,
+      "one_step_corpus_answers": 7,
+      "fraction_of_solved": 0.1522,
+      "won_vs_control": 15,
+      "won_vs_control_by_one_step_citation": [
+        "1569",
+        "378"
+      ],
+      "citations": {
+        "1569": "exact Sylow.normalizer_normalizer P",
+        "252": "exact pow_eq_zero eq",
+        "273": "exact sup_le h\u2081 h\u2082",
+        "282": "apply eq_bot_or_eq_top",
+        "378": "exact IntermediateField.normal_sup F F\u2080 E K",
+        "40": "exact Fintype.card_pi_const G n",
+        "6123": "exact subgroup_solvable_of_solvable H"
+      }
+    }
+  },
+  "proofnet_test": {
+    "none": {
+      "solved": 24,
+      "one_step_corpus_answers": 2,
+      "fraction_of_solved": 0.0833,
+      "won_vs_control": null,
+      "won_vs_control_by_one_step_citation": null,
+      "citations": {
+        "243": "exact IsAlgebraic.of_pow (Nat.zero_lt_two) ha",
+        "332": "exact isClosed_le hf hg"
+      }
+    },
+    "sv": {
+      "solved": 28,
+      "one_step_corpus_answers": 1,
+      "fraction_of_solved": 0.0357,
+      "won_vs_control": 8,
+      "won_vs_control_by_one_step_citation": [],
+      "citations": {
+        "299": "exact solvable_quotient_of_solvable H"
+      }
+    },
+    "li@50k": {
+      "solved": 28,
+      "one_step_corpus_answers": 4,
+      "fraction_of_solved": 0.1429,
+      "won_vs_control": 8,
+      "won_vs_control_by_one_step_citation": [],
+      "citations": {
+        "285": "exact Eq.symm (orderOf_inv x)",
+        "299": "exact solvable_quotient_of_solvable H",
+        "312": "exact IsUnit.neg hu",
+        "332": "exact isClosed_le hf hg"
+      }
+    }
+  }
+}

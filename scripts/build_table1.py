@@ -22,7 +22,10 @@ from pathlib import Path
 # Importable from a fresh clone with no install and no exported PYTHONPATH: a login-node
 # `python scripts/<this>.py` must work, because that is how the analysis scripts get run.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from passk_profile import BENCHMARKS as BENCHMARK_SIZES  # noqa: E402
+from passk_union import matches  # noqa: E402
 from prooflens_prover.eval.compare import (
     Arm,
     compare,
@@ -51,13 +54,22 @@ BENCHMARK_ORDER = ["fate_m", "proofnet_test", "minif2f_test", "putnambench"]
 
 
 
-def discover(results_root: Path, policy: str = "repertoire") -> dict[tuple[str, str], Path]:
+def discover(results_root: Path, policy: str = "repertoire",
+             specs: list[str] | None = None,
+             full_benchmarks_only: bool = False) -> dict[tuple[str, str], Path]:
     """Most recent finalised run per (benchmark, arm), restricted to one policy.
 
     The policy filter is not a convenience. A 7B language model and a 19-tactic repertoire are
     different systems whose pass rates are not comparable, and both produce runs for `arm=li` on
     `fate_m`. Keyed on (benchmark, arm) alone, the newer of the two would silently take the cell and
     the table would mix them — with a caption claiming the generator was held fixed.
+
+    `specs` is the same `key=value` filter `passk_union.py` takes, and exists for the same reason
+    one level deeper. Table 1 is the **Tier 1** system, 64 x 16 at one seed; the exported records
+    also hold the 64 x 32 pass@8 sweep for the same (benchmark, arm) pairs, and those runs are
+    newer. Pointed at `results/exported/logs` with no filter, "most recent" quietly hands every cell
+    to a sweep seed and prints a plausible, wrong table. `--match search.samples_per_step=16` is how
+    Tier 1 names itself; `budget_is_uniform` below refuses the mixed case regardless.
 
     Runs from before `policy_kind` existed are all `repertoire`; that is what they were.
     """
@@ -72,11 +84,52 @@ def discover(results_root: Path, policy: str = "repertoire") -> dict[tuple[str, 
         cfg = m.get("config", {})
         if cfg.get("policy_kind", "repertoire") != policy:
             continue
+        if specs and not matches(cfg, specs):
+            continue
+        if full_benchmarks_only:
+            want = dict(BENCHMARK_SIZES).get(cfg.get("benchmark", "?"))
+            if want is not None and cfg.get("n_problems") != want:
+                continue
         key = (cfg.get("benchmark", "?"), cfg.get("arm", "?"))
         started = m.get("started_utc", "")
         if key not in best or started > best[key][0]:
             best[key] = (started, d)
     return {k: v[1] for k, v in best.items()}
+
+
+def budget_is_uniform(runs: dict[tuple[str, str], Path]) -> dict[tuple[int, int], list[str]]:
+    """`{(max_expansions, samples_per_step): [run_id, ...]}` — one key means the table is honest.
+
+    A cell produced at 64 x 32 sitting beside one produced at 64 x 16 is a comparison of budgets
+    wearing a caption that says the budget was held fixed. Returning the grouping rather than a
+    bool lets the caller name the offenders, which is what makes the error actionable.
+    """
+    by_budget: dict[tuple[int, int], list[str]] = {}
+    for d in runs.values():
+        cfg = json.loads((d / "manifest.json").read_text(encoding="utf-8"))["config"]
+        s = cfg.get("search", {})
+        key = (s.get("max_expansions"), s.get("samples_per_step"))
+        by_budget.setdefault(key, []).append(d.name)
+    return by_budget
+
+
+def ragged_benchmarks(runs: dict[tuple[str, str], Path]) -> dict[str, dict[int, list[str]]]:
+    """Benchmarks whose selected cells cover different numbers of problems.
+
+    The second way `results/exported/logs` produces a plausible wrong table. The budget pilot of
+    section 8.1 ran ProofNet's **first 60 problems** at the same 64 x 16 as Tier 1, and it is newer,
+    so "most recent" hands it the `proofnet_test/li` cell; the row then reads 7/60 beside a 24/186
+    control, and the delta is meaningless. `--full-benchmarks` drops the partial runs.
+
+    The test is *raggedness*, not size. A table built entirely from a 3-problem smoke set is small
+    but internally consistent, and refusing it would break every fixture-scale invocation for no
+    gain. What cannot be allowed is two cells of the same benchmark disagreeing on the denominator.
+    """
+    counts: dict[str, dict[int, list[str]]] = {}
+    for (bench, _arm), d in runs.items():
+        cfg = json.loads((d / "manifest.json").read_text(encoding="utf-8"))["config"]
+        counts.setdefault(bench, {}).setdefault(cfg.get("n_problems"), []).append(d.name)
+    return {b: c for b, c in counts.items() if len(c) > 1}
 
 
 def main() -> None:
@@ -90,12 +143,48 @@ def main() -> None:
     ap.add_argument("--policy", default="repertoire",
                     help="which generator's runs to tabulate: repertoire (Track A') or vllm "
                          "(Tier 1). Mixing them in one table would be meaningless.")
+    ap.add_argument("--match", action="append", default=[], metavar="KEY=VALUE",
+                    help="narrow the run set, e.g. --match search.samples_per_step=16 to select "
+                         "Tier 1 rather than a pass@8 sweep seed. Repeatable.")
+    ap.add_argument("--full-benchmarks", action="store_true",
+                    help="ignore runs that covered only part of their benchmark (pilots and "
+                         "smoke tests). Needed against results/exported/logs, where the "
+                         "60-problem budget pilot is newer than the Tier 1 run it displaces.")
     args = ap.parse_args()
 
-    runs = discover(args.results_root, args.policy)
+    runs = discover(args.results_root, args.policy, args.match,
+                    full_benchmarks_only=args.full_benchmarks)
     if not runs:
         raise SystemExit(
             f"no finalised --policy {args.policy!r} runs under {args.results_root}"
+            + (f" matching {args.match}" if args.match else "")
+        )
+
+    # Refuse a table whose cells were produced at different search budgets. Without this, pointing
+    # this script at the exported records silently rebuilds Table 1 out of pass@8 sweep seeds.
+    budgets = budget_is_uniform(runs)
+    if len(budgets) > 1:
+        lines = "\n".join(
+            f"    {e} x {s}: {', '.join(sorted(ids))}" for (e, s), ids in sorted(
+                budgets.items(), key=lambda kv: (kv[0][0] or 0, kv[0][1] or 0))
+        )
+        raise SystemExit(
+            "refusing to build a table from runs at different search budgets — the caption would "
+            f"claim a fixed budget that was not fixed:\n{lines}\n"
+            "  Narrow the selection, e.g. --match search.samples_per_step=16 for Tier 1."
+        )
+
+    if ragged := ragged_benchmarks(runs):
+        listed = "\n".join(
+            f"    {bench}:\n" + "\n".join(
+                f"      {n} problems: {', '.join(sorted(ids))}" for n, ids in sorted(
+                    counts.items(), key=lambda kv: kv[0] or 0))
+            for bench, counts in sorted(ragged.items())
+        )
+        raise SystemExit(
+            "refusing to build a table whose cells cover different numbers of problems — a "
+            f"60-problem cell beside a 186-problem control is not a comparison:\n{listed}\n"
+            "  Pass --full-benchmarks to ignore pilots and smoke tests."
         )
 
     benchmarks = sorted(

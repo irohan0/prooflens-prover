@@ -1,0 +1,116 @@
+{
+  "benchmarks": [
+    "proofnet_test"
+  ],
+  "seeds": [
+    0
+  ],
+  "duplicate_proof_fraction_threshold": 0.95,
+  "pairs": [
+    {
+      "pair": "none vs sv",
+      "n_both_solved": 18,
+      "fraction_identical_proofs": 0.2222222222222222,
+      "only_first": 1,
+      "only_second": 8,
+      "discordant": 9,
+      "proved": [
+        19,
+        26
+      ],
+      "tie": false,
+      "tie_probability_under_equivalence": null,
+      "retriever": [
+        "none",
+        "sv"
+      ],
+      "index": [
+        "data/index/li_ft_novel_bm25",
+        "data/index/sv_ft_novel_lr3e6"
+      ],
+      "mean_latency_ms": [
+        0.0,
+        36.43
+      ],
+      "n_queries": [
+        0,
+        5628
+      ],
+      "run_id": [
+        "proofnet_test_none_vllm_20260809T200647051581_badc9e4",
+        "proofnet_test_sv_vllm_20260809T200647068905_badc9e4"
+      ],
+      "duplicate": false
+    },
+    {
+      "pair": "none vs li@50k",
+      "n_both_solved": 18,
+      "fraction_identical_proofs": 0.3333333333333333,
+      "only_first": 1,
+      "only_second": 8,
+      "discordant": 9,
+      "proved": [
+        19,
+        26
+      ],
+      "tie": false,
+      "tie_probability_under_equivalence": null,
+      "retriever": [
+        "none",
+        "li"
+      ],
+      "index": [
+        "data/index/li_ft_novel_bm25",
+        "data/index/li_ft_novel_bm25"
+      ],
+      "mean_latency_ms": [
+        0.0,
+        1010.56
+      ],
+      "n_queries": [
+        0,
+        5658
+      ],
+      "run_id": [
+        "proofnet_test_none_vllm_20260809T200647051581_badc9e4",
+        "proofnet_test_li_vllm_20260809T200647071567_badc9e4"
+      ],
+      "duplicate": false
+    },
+    {
+      "pair": "sv vs li@50k",
+      "n_both_solved": 20,
+      "fraction_identical_proofs": 0.45,
+      "only_first": 6,
+      "only_second": 6,
+      "discordant": 12,
+      "proved": [
+        26,
+        26
+      ],
+      "tie": true,
+      "tie_probability_under_equivalence": 0.2255859375,
+      "retriever": [
+        "sv",
+        "li"
+      ],
+      "index": [
+        "data/index/sv_ft_novel_lr3e6",
+        "data/index/li_ft_novel_bm25"
+      ],
+      "mean_latency_ms": [
+        36.43,
+        1010.56
+      ],
+      "n_queries": [
+        5628,
+        5658
+      ],
+      "run_id": [
+        "proofnet_test_sv_vllm_20260809T200647068905_badc9e4",
+        "proofnet_test_li_vllm_20260809T200647071567_badc9e4"
+      ],
+      "duplicate": false
+    }
+  ]
+}

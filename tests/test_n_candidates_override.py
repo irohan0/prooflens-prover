@@ -353,3 +353,104 @@ class TestTableCaptionMatchesThePolicy:
     def test_each_title_names_its_tier(self, tmp_path):
         assert "Track A'" in self.build(tmp_path, "repertoire")
         assert "Tier 1" in self.build(tmp_path, "vllm")
+
+
+class TestTableRefusesIncomparableCells:
+    """Two ways `results/exported/logs` builds a plausible, wrong Table 1.
+
+    `discover` takes the most recent finalised run per (benchmark, arm). Against the private
+    `results/logs` that was unambiguous, because only Tier 1 lived there. Against the published
+    export it is not: the pass@8 sweep (64 x 32, eight seeds) and the budget pilot (64 x 16, the
+    first 60 ProofNet problems) are both *newer* than the Tier 1 runs whose cells they take. Both
+    produce a table that looks entirely normal and is not the published one.
+
+    The refusals are the point of these tests -- a checker that cannot fail is not a checker.
+    """
+
+    @staticmethod
+    def _run(root, tmp_path, *extra):
+        import subprocess
+        repo = Path(__file__).resolve().parent.parent
+        return subprocess.run(
+            [sys.executable, str(repo / "scripts" / "build_table1.py"),
+             "--policy", "vllm", "--results-root", str(root),
+             "--out-dir", str(tmp_path / "out"), "--n-boot", "50", "--n-perm", "50", *extra],
+            capture_output=True, text=True,
+            env={**os.environ, "PYTHONPATH": str(repo / "src")}, cwd=repo,
+        )
+
+    @staticmethod
+    def _write(root, name, *, bench, arm, started, samples, n_problems, n_proved):
+        d = root / name
+        d.mkdir(parents=True)
+        (d / "manifest.json").write_text(json.dumps({
+            "run_id": name, "started_utc": started,
+            "config": {"benchmark": bench, "arm": arm, "policy_kind": "vllm",
+                       "n_problems": n_problems,
+                       "search": {"max_expansions": 64, "samples_per_step": samples}},
+            "outcome": {"n_proved": n_proved},
+        }))
+        (d / "attempts.jsonl").write_text("\n".join(
+            json.dumps({"problem_id": str(i), "proved": i < n_proved,
+                        "status": "proved" if i < n_proved else "exhausted",
+                        "proof": ["aesop"] if i < n_proved else None})
+            for i in range(n_problems)
+        ))
+
+    def test_refuses_cells_built_at_different_search_budgets(self, tmp_path):
+        root = tmp_path / "logs"
+        self._write(root, "a", bench="fate_m", arm="none", started="2026-08-01T00:00:00+00:00",
+                    samples=16, n_problems=10, n_proved=3)
+        self._write(root, "b", bench="fate_m", arm="sv", started="2026-08-09T00:00:00+00:00",
+                    samples=32, n_problems=10, n_proved=6)
+        p = self._run(root, tmp_path)
+        assert p.returncode != 0
+        assert "different search budgets" in p.stderr, p.stderr
+        assert "64 x 16" in p.stderr and "64 x 32" in p.stderr, p.stderr
+
+    def test_the_match_filter_resolves_it(self, tmp_path):
+        root = tmp_path / "logs"
+        self._write(root, "a", bench="fate_m", arm="none", started="2026-08-01T00:00:00+00:00",
+                    samples=16, n_problems=10, n_proved=3)
+        self._write(root, "b", bench="fate_m", arm="sv", started="2026-08-09T00:00:00+00:00",
+                    samples=32, n_problems=10, n_proved=6)
+        self._write(root, "c", bench="fate_m", arm="sv", started="2026-08-02T00:00:00+00:00",
+                    samples=16, n_problems=10, n_proved=5)
+        p = self._run(root, tmp_path, "--match", "search.samples_per_step=16")
+        assert p.returncode == 0, p.stderr
+        assert "5/10" in (tmp_path / "out" / "table1.md").read_text(encoding="utf-8")
+
+    def test_refuses_a_sixty_problem_cell_beside_a_full_benchmark(self, tmp_path):
+        root = tmp_path / "logs"
+        self._write(root, "full", bench="proofnet_test", arm="none",
+                    started="2026-08-01T00:00:00+00:00", samples=16, n_problems=186, n_proved=24)
+        self._write(root, "pilot", bench="proofnet_test", arm="li",
+                    started="2026-08-15T00:00:00+00:00", samples=16, n_problems=60, n_proved=7)
+        p = self._run(root, tmp_path)
+        assert p.returncode != 0
+        assert "different numbers of problems" in p.stderr, p.stderr
+        assert "60 problems" in p.stderr and "186 problems" in p.stderr, p.stderr
+
+    def test_full_benchmarks_drops_the_pilot(self, tmp_path):
+        root = tmp_path / "logs"
+        self._write(root, "full", bench="proofnet_test", arm="none",
+                    started="2026-08-01T00:00:00+00:00", samples=16, n_problems=186, n_proved=24)
+        self._write(root, "tier1", bench="proofnet_test", arm="li",
+                    started="2026-08-10T00:00:00+00:00", samples=16, n_problems=186, n_proved=28)
+        self._write(root, "pilot", bench="proofnet_test", arm="li",
+                    started="2026-08-15T00:00:00+00:00", samples=16, n_problems=60, n_proved=7)
+        p = self._run(root, tmp_path, "--full-benchmarks")
+        assert p.returncode == 0, p.stderr
+        table = (tmp_path / "out" / "table1.md").read_text(encoding="utf-8")
+        assert "28/186" in table, table
+        assert "7/60" not in table, table
+
+    def test_a_uniformly_small_run_set_is_allowed(self, tmp_path):
+        """Raggedness is the defect, not size. Fixture-scale tables must still build."""
+        root = tmp_path / "logs"
+        self._write(root, "a", bench="fate_m", arm="none", started="2026-08-01T00:00:00+00:00",
+                    samples=16, n_problems=3, n_proved=1)
+        self._write(root, "b", bench="fate_m", arm="sv", started="2026-08-02T00:00:00+00:00",
+                    samples=16, n_problems=3, n_proved=2)
+        p = self._run(root, tmp_path)
+        assert p.returncode == 0, p.stderr

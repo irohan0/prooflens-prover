@@ -103,6 +103,26 @@ class FusionRetriever:
     def component_names(self) -> tuple[str, ...]:
         return tuple(getattr(r, "name", "?") for r in self.retrievers)
 
+    def component_stats(self) -> dict[str, dict]:
+        """Each sub-retriever's own counters, for the run manifest.
+
+        The fused `stats` above times the whole operation and cannot say which half was slow. That
+        distinction is the single unmeasured quantity in this arm: late interaction is timed at
+        936–1,071 ms/query on a GPU, but single-vector is deliberately placed on the **CPU** here,
+        so the two indices need not share a card with a 7B model — and no `sv` figure in this
+        project was ever taken off a GPU. Without this the only way to recover it is to subtract one
+        mean from another and hope the two runs are comparable.
+
+        It also settles a question subtraction cannot: the two servers contend for the same eight
+        cores, so single-vector's CPU forward pass and late interaction's 50,000-row numpy rerank
+        can each slow the other. Only per-component timing during a fused run shows that.
+        """
+        return {
+            getattr(r, "name", f"component_{i}"): r.stats.to_dict()
+            for i, r in enumerate(self.retrievers)
+            if getattr(r, "stats", None) is not None
+        }
+
     def config(self) -> dict[str, object]:
         """Recorded in the run manifest — fusion is not reproducible without these."""
         return {

@@ -162,6 +162,43 @@ def discover(results_root: Path, benchmark: str, policy: str,
     return out
 
 
+def arm_matches(label: str, wanted: list[str]) -> bool:
+    """Whether a `Draw.arm` label is one of the requested arms.
+
+    `Draw` appends the first-stage budget to any arm that recorded one, so late interaction appears
+    as `li@50k` and the fusion arm — which inherits its sub-retriever's budget — as `fusion@50k`.
+    Requiring the suffix would mean typing a number that is already pinned by `--match`, and getting
+    it wrong yields an empty selection rather than an error. Both spellings are accepted; the bare
+    name matches any budget, which is safe because mixing budgets is refused downstream anyway.
+    """
+    return any(label == w or label.startswith(f"{w}@") for w in wanted)
+
+
+def parse_seeds(spec: str | None) -> set[int] | None:
+    """`"0-3"` or `"0,1,2,3"` -> {0,1,2,3}. None means every seed found.
+
+    Needed to compare arms measured at different depths: the sweep ran eight seeds per arm and a
+    later arm may only have four, and `group()` rightly refuses a mismatched seed set rather than
+    averaging over draws that were never made. Restricting the deeper arms is how the comparison is
+    made at equal k, using runs that already exist.
+    """
+    if spec is None:
+        return None
+    out: set[int] = set()
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part.lstrip("-"):
+            lo, _, hi = part.partition("-")
+            out.update(range(int(lo), int(hi) + 1))
+        else:
+            out.add(int(part))
+    if not out:
+        raise SystemExit(f"--seeds {spec!r} selected no seeds")
+    return out
+
+
 def check_verified(run_dir: Path) -> str | None:
     """None if this run's proofs were independently re-checked at all, else why not.
 
@@ -245,7 +282,11 @@ def main() -> None:
     ap.add_argument("--run", type=Path, action="append",
                     help="explicit run directory; repeatable. Overrides discovery")
     ap.add_argument("--arm", action="append",
-                    help="restrict the ensemble to these arms; repeatable")
+                    help="restrict the ensemble to these arms; repeatable. The bare name matches "
+                         "any first-stage budget, so `--arm li` selects `li@50k`")
+    ap.add_argument("--seeds", default=None, metavar="SPEC",
+                    help="restrict to these seeds, e.g. 0-3 or 0,1,2,3. Use it to compare an arm "
+                         "measured at four seeds against ones measured at eight, at equal k")
     ap.add_argument("--match", action="append", default=[], metavar="KEY=VALUE",
                     help="dotted config key, repeatable, restricting discovery to one system. "
                          "e.g. --match search.samples_per_step=32. Needed whenever runs at another "
@@ -264,9 +305,18 @@ def main() -> None:
             + (f" matching {args.match}" if args.match else "")
         )
 
+    want_seeds = parse_seeds(args.seeds)
     problems: list[str] = []
     draws: list[Draw] = []
     for d in run_dirs:
+        draw = load_draw(d)
+        # Selection first, verification second. A run that is not being counted cannot inflate
+        # anything, so demanding its verification would block a report over other runs entirely —
+        # which is exactly the situation when a newly-added arm is still being checked.
+        if args.arm and not arm_matches(draw.arm, args.arm):
+            continue
+        if want_seeds is not None and draw.seed not in want_seeds:
+            continue
         if (why := check_verified(d)) is not None:
             if not args.allow_unverified:
                 raise SystemExit(
@@ -275,11 +325,15 @@ def main() -> None:
                     "work-in-progress look."
                 )
             print(f"  WARNING unverified: {d.name} ({why})")
-        draw = load_draw(d)
-        if args.arm and draw.arm not in args.arm:
-            continue
         draws.append(draw)
         problems = problems or sorted(draw.attempted)
+
+    if not draws:
+        raise SystemExit(
+            f"every discovered run was filtered out by --arm {args.arm} / --seeds {args.seeds}. "
+            "Arms present: "
+            f"{sorted({load_draw(d).arm for d in run_dirs})}"
+        )
 
     by_arm = group(draws)
     seed_sets = {arm: set(s) for arm, s in by_arm.items()}

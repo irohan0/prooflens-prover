@@ -40,7 +40,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from prooflens_prover.lean.backend import ProofState  # noqa: E402
 from prooflens_prover.prover.search import SearchConfig  # noqa: E402
 from prooflens_prover.prover.vllm_policy import Generation, SamplingConfig, VLLMPolicy  # noqa: E402
-from prooflens_prover.retrieval.base import Premise  # noqa: E402
+from prooflens_prover.retrieval.base import DEFAULT_TOP_K, Premise  # noqa: E402
+from prooflens_prover.retrieval.fusion import DEFAULT_FETCH_K  # noqa: E402
+from prooflens_prover.retrieval.fusion import MODES as FUSION_MODES  # noqa: E402
 from prooflens_prover.utils.logging import ensure_utf8_output  # noqa: E402
 
 #: The corpus every arm must rank, asserted at index build by `--assert-corpus-id` and again here.
@@ -60,6 +62,56 @@ BASELINE: dict[tuple[str, str], tuple[float, float]] = {
     ("fate_m", "sv"): (0.04, 0.94),
     ("fate_m", "li"): (1.09, 0.99),
 }
+
+#: Correction applied whenever the projection is *extrapolated* away from the 64 x 16 point BASELINE
+#: was measured at. It is not a fudge factor, it is a measured shortfall.
+#:
+#: The model above assumes retrieval cost holds constant in `samples` — one query per expansion,
+#: and samples do not change the number of expansions. The pass@8 sweep disproved that. More samples
+#: keep the frontier alive longer, so more expansions execute, so more queries are issued:
+#: ProofNet late interaction went from 5,631 queries at 16 samples to **7,575 at 32**, +35%, and its
+#: mean latency rose too. The uncorrected projection therefore came in under what the sweep really
+#: took, on all four measured cells:
+#:
+#:     proofnet li  projected 5.63 h  |  measured median 6.38  max 6.89   (-18.3% vs max)
+#:     proofnet sv  projected 4.05 h  |  measured median 4.30  max 4.54   (-10.8%)
+#:     fate_m   li  projected 3.25 h  |  measured median 3.42  max 3.58   ( -9.1%)
+#:     fate_m   sv  projected 2.04 h  |  measured median 2.24  max 2.37   (-14.1%)
+#:
+#: Under-projecting is the dangerous direction: it greenlights a job that then dies at the wall
+#: clock. 1.25 is the smallest multiplier that clears every measured cell's **slowest seed**, which
+#: is the right target because an array job is only as good as its worst task. A test pins that.
+EXTRAPOLATION_SAFETY = 1.25
+
+#: The point BASELINE was measured at. A request for exactly this is not an extrapolation.
+BASELINE_CONFIG = (64, 16)
+
+#: Mean per-query latency at the sweep configuration (64 x 32, premise-free 0.25), milliseconds.
+#: Used only to price the fusion arm, whose cost per state is one query of *each* sub-retriever.
+SWEEP_QUERY_MS: dict[tuple[str, str], float] = {
+    ("proofnet_test", "li"): 1070.7, ("proofnet_test", "sv"): 38.8,
+    ("fate_m", "li"): 936.5, ("fate_m", "sv"): 36.8,
+}
+
+#: What single-vector costs per query when the fusion arm puts it on the **CPU**, milliseconds.
+#: **Measured**, on the Phase 4 mode pilot: 512.65 ms over 2,670 queries and 505.37 over 2,739, on
+#: the two fusion modes respectively. Rounded up to 520.
+#:
+#: This replaces a placeholder of 400.0 that was described as "deliberately far above any plausible
+#: value". It was not: the real figure is **13x** single-vector's GPU cost (36.8–38.8 ms) and above
+#: the placeholder. Recorded because the direction of that error is the dangerous one — a
+#: projection built on it runs short — and because *why* it was wrong is worth keeping: the two
+#: retrieval servers share eight cores, so single-vector's CPU forward pass and late interaction's
+#: 50,000-row numpy rerank each slow the other. No standalone timing predicts that, which is why
+#: the pilot timed them together.
+#:
+#: Override with `--fusion-sv-ms` for a different device; `FUSION_SV_GPU_MS` is the figure for
+#: `--fusion-sv-device cuda`, which trades this cost for GPU memory beside a 7B model.
+FUSION_SV_CPU_MS = 520.0
+
+#: Single-vector's measured per-query cost on a GPU, for `--fusion-sv-device cuda`. Taken from the
+#: 32-run sweep, where it ran as its own arm on the same hardware.
+FUSION_SV_GPU_MS = 38.8
 
 #: Expected problem counts, so a mis-resolved `--data-root` cannot look like a small benchmark.
 BENCHMARK_SIZES = {"fate_m": 141, "proofnet_test": 186, "minif2f_test": 244}
@@ -133,21 +185,43 @@ def load_statements(data_root: Path, benchmark: str) -> list:
 PREMISE_FREE_OVERHEAD = 1.06
 
 
+def fusion_retrieval_factor(benchmark: str, sv_ms: float = FUSION_SV_CPU_MS) -> float:
+    """How much more a fused query costs than a late-interaction one, from measured latencies.
+
+    Fusion issues one query to *each* sub-retriever per state, so its retrieval cost is their sum.
+    Late interaction dominates (measured 936–1,071 ms), but single-vector on the CPU is not the ~4%
+    it is on a GPU, and the previous hard-coded 1.1 assumed it was. On ProofNet — the job with the
+    least wall-clock headroom in the whole study — that difference is over half an hour.
+    """
+    li_ms = SWEEP_QUERY_MS.get((benchmark, "li"))
+    if not li_ms:
+        return 1.0 + sv_ms / 1000.0
+    return (li_ms + sv_ms) / li_ms
+
+
 def project_hours(benchmark: str, arm: str, expansions: int, samples: int,
-                  n_problems: int | None, premise_free: float = 0.0) -> float | None:
-    """Projected wall clock, scaling the measured baseline by the requested budget."""
+                  n_problems: int | None, premise_free: float = 0.0,
+                  fusion_sv_ms: float = FUSION_SV_CPU_MS) -> float | None:
+    """Projected wall clock, scaling the measured baseline by the requested budget.
+
+    Exact at the point BASELINE was measured (64 x 16, no premise-free mixing) and deliberately
+    **conservative** away from it — see `EXTRAPOLATION_SAFETY` for the measurement that made that
+    necessary.
+    """
     key = (benchmark, "li" if arm == "fusion" else arm)
     if key not in BASELINE:
         return None
     retrieval_h, gen_h = BASELINE[key]
     if arm == "fusion":
-        # Fusion queries both retrievers per state; single-vector adds ~4% of a li query on GPU and
-        # rather less than that matters next to li's ~930 ms.
-        retrieval_h *= 1.1
+        retrieval_h *= fusion_retrieval_factor(benchmark, fusion_sv_ms)
     hours = (retrieval_h * (expansions / 64)
              + gen_h * (expansions / 64) * (samples / 16))
     if premise_free > 0:
         hours *= PREMISE_FREE_OVERHEAD
+    # Anything but the measured point is an extrapolation, and the sweep showed the extrapolation
+    # runs short. Fusion is always one, since no fusion run has ever been timed at any budget.
+    if (expansions, samples) != BASELINE_CONFIG or premise_free > 0 or arm == "fusion":
+        hours *= EXTRAPOLATION_SAFETY
     if n_problems:
         hours *= n_problems / BENCHMARK_SIZES.get(benchmark, n_problems)
     return hours
@@ -162,6 +236,12 @@ def main() -> None:
     ap.add_argument("--index", type=Path, default=None)
     ap.add_argument("--index-sv", type=Path, default=None)
     ap.add_argument("--index-li", type=Path, default=None)
+    # Defaults IMPORTED from the same modules prove_benchmark.py takes them from, never restated.
+    # A restated default is how `--temperature 1.0` silently overrode REAL-Prover's 1.5 on every
+    # run in this project: an argparse default is always passed, so the two must not drift.
+    ap.add_argument("--top-k", type=int, default=DEFAULT_TOP_K)
+    ap.add_argument("--fusion-mode", default="rrf", choices=sorted(FUSION_MODES))
+    ap.add_argument("--fusion-fetch-k", type=int, default=DEFAULT_FETCH_K)
     ap.add_argument("--model", type=Path, default=None)
     ap.add_argument("--max-expansions", type=int, default=64)
     ap.add_argument("--samples-per-step", type=int, default=16)
@@ -174,6 +254,10 @@ def main() -> None:
     ap.add_argument("--headroom", type=float, default=0.8,
                     help="fraction of --slurm-time the projection must fit inside, leaving room "
                          "for Lean staging and the model load")
+    ap.add_argument("--fusion-sv-ms", type=float, default=FUSION_SV_CPU_MS,
+                    help="measured single-vector latency on the fusion arm's device, ms/query. The "
+                         "default is a deliberate over-estimate because no fusion run has been "
+                         "timed; pass the smoke run's mean_latency_ms to tighten the projection")
     args = ap.parse_args()
     ensure_utf8_output()
     c = Check()
@@ -228,6 +312,36 @@ def main() -> None:
             def retrieve(self, query, k=10):  # noqa: ARG002
                 return stub_premises[:k]
 
+        # The fusion arm has guards of its own — an unknown mode, fewer than two sub-retrievers, two
+        # of the same kind — and none of them are reachable through a stub standing in for the whole
+        # retriever. They raise in `__post_init__`, i.e. before the Lean import, so a bad
+        # `--fusion-mode` would cost only a queue wait; the check is here because a queue wait on a
+        # busy partition is hours and this costs microseconds. It runs the real class over two stub
+        # halves, so it needs no index.
+        if args.arm == "fusion":
+            from prooflens_prover.retrieval.fusion import FusionRetriever
+
+            def half(name: str):
+                return type(name, (), {
+                    "name": name,
+                    "retrieve": lambda self, query, k=10: stub_premises[:k],  # noqa: ARG005
+                })()
+
+            fused = FusionRetriever(
+                retrievers=(half("sv"), half("li")),
+                mode=args.fusion_mode, fetch_k=args.fusion_fetch_k,
+            )
+            got = fused.retrieve("⊢ True", k=args.top_k)
+            if not got:
+                c.fail("fusion", f"mode {args.fusion_mode!r} returned nothing from two live halves")
+            elif args.fusion_fetch_k < args.top_k:
+                c.fail("fusion", f"--fusion-fetch-k {args.fusion_fetch_k} is below --top-k "
+                                 f"{args.top_k}: both rankings get truncated before they can "
+                                 "disagree, so fusion degenerates to one retriever")
+            else:
+                c.ok("fusion", f"mode={args.fusion_mode} fetch_k={args.fusion_fetch_k} "
+                               f"-> {len(got)} premise(s) from {fused.component_names}")
+
         class StubGenerator:
             def generate(self, prompt, n, sampling):  # noqa: ARG002
                 nonlocal prompt_chars
@@ -279,7 +393,12 @@ def main() -> None:
     # --- the projection -----------------------------------------------------------------------
     n = args.limit or len(problems) or None
     hours = project_hours(args.benchmark, args.arm, args.max_expansions,
-                          args.samples_per_step, n, args.premise_free_fraction)
+                          args.samples_per_step, n, args.premise_free_fraction,
+                          fusion_sv_ms=args.fusion_sv_ms)
+    if args.arm == "fusion":
+        source = ("measured — passed with --fusion-sv-ms" if args.fusion_sv_ms != FUSION_SV_CPU_MS
+                  else "NOT measured; deliberate over-estimate")
+        print(f"  fusion priced with single-vector at {args.fusion_sv_ms:.0f} ms/query ({source})")
     if hours is None:
         c.warn("wall clock", f"no measured baseline for {args.benchmark}/{args.arm}; unprojected")
     elif args.limit and args.limit < BENCHMARK_SIZES.get(args.benchmark, 0):
@@ -294,8 +413,22 @@ def main() -> None:
         budget = args.slurm_time * args.headroom
         detail = (f"projected {hours:.2f} h for {n} problems, against {budget:.2f} h usable "
                   f"({args.slurm_time:.0f} h limit x {args.headroom:.0%})")
-        if hours > budget:
-            c.fail("wall clock", detail + ". Shard with --limit/--offset, or raise -t")
+        # Three outcomes, not two. The old gate failed anything over the headroom, which is wrong
+        # for a resumable run and would have blocked the pass@8 sweep: its late-interaction jobs
+        # projected past the headroom and finished at 6.89 h under an 8 h limit. What deserves a
+        # refusal is a projection past the limit *itself* — that job cannot finish however patient
+        # you are. Between the two, the run is expected to need one resume, which is normal
+        # operation here and is what `--resume` exists for.
+        if hours > args.slurm_time:
+            c.fail("wall clock", detail
+                   + f". Past the {args.slurm_time:.0f} h limit outright, so the job cannot finish "
+                     "in one go even with zero startup cost. Raise -t, or shard it.")
+        elif hours > budget:
+            c.warn("wall clock", detail
+                   + ". Over the headroom but under the limit: expect this to need ONE resume. "
+                     "Submit it, then re-queue the unfinished run with "
+                     "SEED=<n> RESUME=results/logs/<run_id>. Nothing is lost — every attempt is "
+                     "fsynced as it completes.")
         else:
             c.ok("wall clock", detail)
 
@@ -305,9 +438,15 @@ def main() -> None:
         for f in c.failures:
             print(f"  - {f}")
         sys.exit(1)
-    print("PREFLIGHT CLEAN — this configuration is safe to submit.")
     if c.notes:
-        print(f"({len(c.notes)} unchecked item(s): {'; '.join(c.notes)})")
+        # Not a footnote under "safe to submit". A warning here means something about this job needs
+        # a decision — a projection past the headroom, a --limit subset that will not scale
+        # pro rata — and the headline has to carry it or it gets read as a clean bill of health.
+        print(f"PREFLIGHT CLEAN, WITH {len(c.notes)} WARNING(S) — safe to submit, but read these:")
+        for note in c.notes:
+            print(f"  ! {note}")
+        return
+    print("PREFLIGHT CLEAN — this configuration is safe to submit.")
 
 
 if __name__ == "__main__":

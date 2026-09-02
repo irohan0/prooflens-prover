@@ -699,6 +699,11 @@ def main() -> None:
         unreadable_row_lines=[n for n, _ in unreadable] or None,
         n_stale_env_recoveries=n_stale,
         retrieval=stats.to_dict(),
+        # Fusion only: which half of the fused query was slow. The fused figure cannot say, and the
+        # sub-retrievers' devices differ by design, so this is the arm's one real unknown.
+        retrieval_components=(
+            retriever.component_stats() if hasattr(retriever, "component_stats") else None
+        ),
         policy_stats=policy_stats,
         generator_stats=generator_stats,
     )
@@ -724,6 +729,13 @@ def main() -> None:
     print(f"wall clock  : {elapsed:.1f}s  ({elapsed / max(len(selected), 1):.1f}s per problem)")
     if stats.n_queries:
         print(f"retrieval   : {stats.to_dict()}")
+        # The number the fusion pilot exists to produce: single-vector's cost on the device this arm
+        # puts it on. Printed beside the fused total so a smoke run answers it without any analysis.
+        if hasattr(retriever, "component_stats"):
+            for name, s in retriever.component_stats().items():
+                print(f"              {name:>6}: {s.get('mean_latency_ms')} ms/query "
+                      f"over {s.get('n_queries')} queries")
+            print("              feed the sv figure to preflight_sweep.py --fusion-sv-ms")
     if policy_stats:
         print(f"policy      : {policy_stats}")
         # The one number that says whether the LLM arm is healthy. Near `--samples-per-step` means

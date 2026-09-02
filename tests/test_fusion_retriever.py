@@ -37,8 +37,13 @@ class FakeRetriever:
 
     def retrieve(self, query: str, k: int = 10) -> list[Premise]:  # noqa: ARG002
         self.asked_for.append(k)
-        return [Premise(formal_name=n, formal_statement=f"statement of {n}", score=1.0 - i / 100)
-                for i, n in enumerate(self._names[:k])]
+        out = [Premise(formal_name=n, formal_statement=f"statement of {n}", score=1.0 - i / 100)
+               for i, n in enumerate(self._names[:k])]
+        # Recorded, as every real retriever does — the in-process dense ones and the subprocess
+        # client both count their own queries. A fake that skips it would let `component_stats()`
+        # pass a test while reporting zeros against a live run.
+        self.stats.record(0.001, len(out))
+        return out
 
 
 def ranking(*names: str) -> list[Premise]:
@@ -182,3 +187,53 @@ def test_fusing_two_retrievers_of_the_same_kind_is_refused():
     # as a result.
     with pytest.raises(ValueError, match="same kind"):
         FusionRetriever((FakeRetriever("sv", ["a"]), FakeRetriever("sv", ["b"])))
+
+
+# --- per-component timing, which the fused total cannot provide ---------------------------------
+
+class TestComponentStats:
+    """The fusion pilot's whole purpose is to measure single-vector on the CPU.
+
+    Late interaction is timed at 936-1,071 ms/query on a GPU across 32 sweep runs. Single-vector
+    has only ever been timed on a GPU (36.8-38.8 ms), and this arm puts it on the CPU so the two
+    indices need not share a card with a 7B model. The fused stat times the whole call and cannot
+    separate them, and the two servers contend for the same eight cores, so subtracting one run's
+    mean from another's is not a substitute for timing them together.
+    """
+
+    def test_each_half_is_reported_separately(self):
+        sv = FakeRetriever("sv", ["a", "b", "c", "d"])
+        li = FakeRetriever("li", ["b", "e", "f", "g"])
+        f = FusionRetriever(retrievers=(sv, li))
+        f.retrieve("q", k=3)
+        per = f.component_stats()
+        assert set(per) == {"sv", "li"}
+        assert per["sv"]["n_queries"] == 1
+        assert per["li"]["n_queries"] == 1
+
+    def test_the_fused_total_still_counts_one_query_not_two(self):
+        # Summing the halves into the arm's own stats would report it as twice as busy at half the
+        # latency, which is what the class docstring says must not happen.
+        f = FusionRetriever(retrievers=(FakeRetriever("sv", ["a", "b"]),
+                                FakeRetriever("li", ["b", "c"])))
+        f.retrieve("q", k=3)
+        f.retrieve("q", k=3)
+        assert f.stats.to_dict()["n_queries"] == 2
+
+    def test_a_component_without_counters_is_skipped_rather_than_crashing(self):
+        class Bare:
+            name = "bare"
+            stats = None
+
+            def retrieve(self, query, k=10):  # noqa: ARG002
+                return []
+
+        f = FusionRetriever(retrievers=(Bare(), FakeRetriever("li", ["a", "b"])))
+        f.retrieve("q", k=2)
+        assert set(f.component_stats()) == {"li"}
+
+    def test_the_run_records_it_so_the_pilot_needs_no_analysis(self):
+        src = (Path(__file__).resolve().parent.parent / "scripts"
+               / "prove_benchmark.py").read_text(encoding="utf-8")
+        assert "retrieval_components=" in src
+        assert "--fusion-sv-ms" in src, "the run must name the flag its measurement feeds"

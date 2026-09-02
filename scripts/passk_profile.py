@@ -38,7 +38,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from passk_union import discover  # noqa: E402
+from passk_union import check_verified, discover, parse_seeds  # noqa: E402
 from prooflens_prover.eval.compare import (  # noqa: E402
     bootstrap_ci,
     mcnemar_exact_p,
@@ -61,8 +61,14 @@ PUBLISHED_PASS1_UNION = {"proofnet_test": 32, "fate_m": 56}
 
 
 def arm_of(draw) -> str:
-    """`li` or `sv`, dropping the `@50k` budget suffix `Draw` appends for the two-stage arm."""
-    return "li" if draw.arm.startswith("li") else draw.arm
+    """The bare arm name, dropping the `@50k` candidate-budget suffix `Draw` appends.
+
+    The suffix is not exclusive to late interaction, which an earlier version of this assumed: the
+    fusion arm carries `n_candidates=50000` as well, so `Draw` labels it `fusion@50k`. Matching only
+    `li` left `--arm fusion` selecting nothing and the fusion runs **silently absent** from a
+    contrast that still printed. Splitting on `@` is what `passk_union.arm_matches` already does.
+    """
+    return draw.arm.split("@", 1)[0]
 
 
 def arm_unions(dirs: list[Path]) -> dict[str, set[str]]:
@@ -121,6 +127,81 @@ def loser_profile(dirs: list[Path], loser: str, pids: set[str]) -> dict:
             "median_expansions_when_exhausted": median(exps) if exps else None}
 
 
+def require_verified(dirs: list[Path], allow: bool) -> None:
+    """Refuse runs whose proofs were never independently re-elaborated.
+
+    `passk_union.py` has always gated on this; this script did not, and it produces numbers for the
+    write-up just as much. An unverified proof is a claim: the search says it closed the goal, and
+    nothing has checked that the recorded tactics actually elaborate from the benchmark statement.
+    The sweep found one that did not, in 1,377 claims.
+
+    Worse here than a missing figure would be: `eval/draws.py` discounts rejected proofs *from the
+    report file*, so a run without one is not merely unchecked, it is silently exempt from the
+    discount that every verified run receives — it competes against them with its bad claims intact.
+    """
+    unverified = [(d, why) for d in dirs if (why := check_verified(d)) is not None]
+    if not unverified:
+        return
+    lines = "\n".join(f"  {d.name}: {why}" for d, why in unverified)
+    if allow:
+        print(f"WARNING — {len(unverified)} unverified run(s), counted anyway:\n{lines}\n")
+        return
+    raise SystemExit(
+        f"{len(unverified)} run(s) have not been verified:\n{lines}\n\n"
+        "A contrast built on unverified proofs is a claim, not a result, and an unverified run is "
+        "also exempt from the discount its verified rivals get. Run slurm/verify_proofs.sbatch "
+        "over them, re-export, and try again — or pass --allow-unverified for a work-in-progress "
+        "look whose numbers must not be reported."
+    )
+
+
+def restrict(dirs: list[Path], arms: list[str] | None, seeds: set[int] | None) -> list[Path]:
+    """The run directories matching the requested arms and seeds.
+
+    Both filters exist for the same reason: a later arm is measured at fewer seeds than the sweep,
+    and comparing it against eight-seed unions would credit it with draws nobody made. Restricting
+    the deeper arms is how the contrast is taken at equal k from runs that already exist.
+    """
+    out = []
+    for d in dirs:
+        draw = load_draw(d)
+        if arms and not any(arm_of(draw) == a for a in arms):
+            continue
+        if seeds is not None and draw.seed not in seeds:
+            continue
+        out.append(d)
+    return out
+
+
+def seeds_of(dirs: list[Path]) -> dict[str, set[int]]:
+    out: dict[str, set[int]] = {}
+    for d in dirs:
+        draw = load_draw(d)
+        out.setdefault(arm_of(draw), set()).add(draw.seed)
+    return out
+
+
+def contrast(a_name: str, a: set[str], b_name: str, b: set[str], attempted: set[str],
+             rng, n_boot: int, n_perm: int) -> None:
+    """Print one paired contrast, with the agreement gate the pass@1 analysis uses."""
+    ids = sorted(attempted)
+    d = np.array([float(p in a) - float(p in b) for p in ids])
+    lo, hi = bootstrap_ci(d, n_boot, rng)
+    perm_p = permutation_p(d, n_perm, rng)
+    print(f"\n  {a_name} vs {b_name}")
+    print(f"    {a_name} only {len(a - b):3} | {b_name} only {len(b - a):3} | "
+          f"shared {len(a & b):3}   McNemar p = {mcnemar_exact_p(len(a - b), len(b - a)):.4f}")
+    print(f"    effect = {d.sum():+.0f} problems ({100 * d.mean():+.2f} pts)   "
+          f"CI [{100 * lo:+.2f}, {100 * hi:+.2f}]   permutation p = {perm_p:.4f}")
+    # A CI excluding zero beside a non-significant permutation p means one is being misread. The
+    # pass@1 analysis gates on their agreement rather than picking whichever is kinder, and the
+    # verdict is printed either way — a check whose pass is silent is a check nobody sees run.
+    if (lo <= 0 <= hi) == (perm_p >= 0.05):
+        print("    CI and permutation agree: yes")
+    else:
+        print("    CI and permutation agree: NO — do not report either")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -129,6 +210,14 @@ def main() -> None:
     ap.add_argument("--match", action="append", default=[],
                     help="KEY=VALUE on the manifest config; the problem count is added per "
                          "benchmark automatically")
+    ap.add_argument("--arm", action="append",
+                    help="restrict to these arms, e.g. --arm fusion --arm li; repeatable")
+    ap.add_argument("--seeds", default=None, metavar="SPEC",
+                    help="restrict to these seeds, e.g. 0-3, so an arm measured at four seeds is "
+                         "contrasted against ones measured at eight at equal k")
+    ap.add_argument("--allow-unverified", action="store_true",
+                    help="contrast runs whose proofs were never re-elaborated. For a "
+                         "work-in-progress look only — never for a reported number")
     ap.add_argument("--n-boot", type=int, default=10000)
     ap.add_argument("--n-perm", type=int, default=10000)
     ap.add_argument("--seed", type=int, default=0)
@@ -136,79 +225,130 @@ def main() -> None:
     ensure_utf8_output()
 
     rng = np.random.default_rng(args.seed)
-    pooled: dict[str, set[str]] = {"li": set(), "sv": set()}
+    want_seeds = parse_seeds(args.seeds)
+    pooled: dict[str, set[str]] = {}
     pooled_attempted: set[str] = set()
+    #: Which arms each benchmark actually contributed. An arm run on only some benchmarks must not
+    #: be pooled against arms run on all of them — see the guard below the loop.
+    arms_seen: dict[str, set[str]] = {}
+
+    #: Every arm label seen anywhere, so a `--arm` that matches nothing can be refused. An arm
+    #: legitimately absent from ONE benchmark is normal (fusion ran on FATE-M only); an arm absent
+    #: from all of them is a typo or a label mismatch, and it fails quietly — the remaining arms
+    #: still contrast and still print a plausible table. `fusion` really did vanish this way, tagged
+    #: `fusion@50k` by `Draw` against an `arm_of` that only stripped the suffix for `li`.
+    seen_anywhere: set[str] = set()
 
     for bench, n in BENCHMARKS:
-        dirs = discover(args.results_root, bench, args.policy, [*args.match, f"n_problems={n}"])
+        found = discover(args.results_root, bench, args.policy, [*args.match, f"n_problems={n}"])
+        seen_anywhere |= {arm_of(load_draw(d)) for d in found}
+        dirs = restrict(found, args.arm, want_seeds)
         if not dirs:
-            print(f"{bench}: no runs matched — check --match")
+            print(f"{bench}: no runs matched — check --match / --arm / --seeds")
             continue
+        require_verified(dirs, args.allow_unverified)
         unions = arm_unions(dirs)
-        if set(unions) != {"li", "sv"}:
-            print(f"{bench}: expected li and sv, found {sorted(unions)}")
+        if len(unions) < 2:
+            print(f"{bench}: only {sorted(unions)} present, nothing to contrast")
             continue
-        li, sv = unions["li"], unions["sv"]
+
+        # Every arm must have been drawn at the same seeds, or a union built from more draws is
+        # compared against one built from fewer, and the difference is budget, not architecture.
+        per_arm_seeds = seeds_of(dirs)
+        if len({frozenset(v) for v in per_arm_seeds.values()}) != 1:
+            raise SystemExit(
+                f"{bench}: arms ran at different seeds "
+                f"{ {a: sorted(v) for a, v in per_arm_seeds.items()} }. Restrict with --seeds so "
+                "every arm contributes the same number of draws."
+            )
+
         attempted = attempted_union(dirs)
         if len(attempted) != n:
             raise SystemExit(
                 f"{bench}: the runs cover {len(attempted)} problems, not {n}. A rate over a "
                 f"different denominator is not comparable to a published one."
             )
-        pooled["li"] |= li
-        pooled["sv"] |= sv
+        for arm, solved in unions.items():
+            pooled.setdefault(arm, set()).update(solved)
+        arms_seen[bench] = set(unions)
         pooled_attempted |= attempted
 
-        both = li | sv
+        arms = sorted(unions)
+        k = len(next(iter(per_arm_seeds.values())))
+        ensemble = set().union(*unions.values())
         base = PUBLISHED_PASS1_UNION.get(bench)
-        print(f"\n{'=' * 78}\n{bench}  ({len(dirs)} runs, {n} problems)\n{'=' * 78}")
-        print(f"  li union over seeds : {len(li):3}  ({100 * len(li) / n:.1f}%)")
-        print(f"  sv union over seeds : {len(sv):3}  ({100 * len(sv) / n:.1f}%)")
-        print(f"  ENSEMBLE            : {len(both):3}  ({100 * len(both) / n:.1f}%)"
-              + (f"   vs published pass@1 union {base}  ({len(both) - base:+d})" if base else ""))
-        print(f"  li only {len(li - sv):2} | sv only {len(sv - li):2} | shared {len(li & sv):3}"
-              f"   McNemar p = {mcnemar_exact_p(len(li - sv), len(sv - li)):.4f}")
+        print(f"\n{'=' * 78}\n{bench}  ({len(dirs)} runs, {n} problems, pass@{k})\n{'=' * 78}")
+        for arm in arms:
+            print(f"  {arm:12} union over seeds : {len(unions[arm]):3}  "
+                  f"({100 * len(unions[arm]) / n:.1f}%)")
+        print(f"  {'ENSEMBLE':12} of {len(arms)} arm(s) : {len(ensemble):3}  "
+              f"({100 * len(ensemble) / n:.1f}%)"
+              + (f"   vs published pass@1 union {base}  ({len(ensemble) - base:+d})"
+                 if base and len(arms) > 1 else ""))
 
         print("\n  status mix across all seeds:")
-        for arm in ("li", "sv"):
+        for arm in arms:
             total, mix = status_mix(dirs, arm)
-            pretty = "  ".join(f"{k}={v:.1f}%" for k, v in mix.items())
+            pretty = "  ".join(f"{key}={v:.1f}%" for key, v in mix.items())
             print(f"    {arm} ({total} attempts): {pretty}")
 
         print("\n  how the losing arm failed on the other's exclusive problems:")
-        for winner, loser in (("li", "sv"), ("sv", "li")):
-            excl = unions[winner] - unions[loser]
-            if not excl:
-                continue
-            prof = loser_profile(dirs, loser, excl)
-            print(f"    {prof['n_problems']} solved only by {winner}: {loser} -> "
-                  f"{prof['statuses']}")
-            if prof["median_expansions_when_exhausted"] is not None:
-                print(f"      median expansions when exhausted: "
-                      f"{prof['median_expansions_when_exhausted']:.0f} of 64")
+        for winner in arms:
+            for loser in arms:
+                if winner == loser:
+                    continue
+                excl = unions[winner] - unions[loser]
+                if not excl:
+                    continue
+                prof = loser_profile(dirs, loser, excl)
+                print(f"    {prof['n_problems']} solved only by {winner}: {loser} -> "
+                      f"{prof['statuses']}")
+                if prof["median_expansions_when_exhausted"] is not None:
+                    print(f"      median expansions when exhausted: "
+                          f"{prof['median_expansions_when_exhausted']:.0f} of 64")
 
-    if not pooled_attempted:
+    if args.arm and (missing := sorted(set(args.arm) - seen_anywhere)):
+        raise SystemExit(
+            f"--arm {', '.join(missing)} matched no run on any benchmark. Present: "
+            f"{sorted(seen_anywhere)}. A contrast that silently drops a requested arm still prints "
+            "a plausible table, so this is a refusal rather than a warning."
+        )
+
+    if not pooled_attempted or len(pooled) < 2:
         return
 
-    li, sv = pooled["li"], pooled["sv"]
-    ids = sorted(pooled_attempted)
-    d = np.array([float(p in li) - float(p in sv) for p in ids])
-    lo, hi = bootstrap_ci(d, args.n_boot, rng)
-    perm_p = permutation_p(d, args.n_perm, rng)
+    # An arm measured on a subset of the benchmarks CANNOT be pooled against arms measured on all of
+    # them. Its union is drawn from a smaller problem set while the denominator is every problem, so
+    # the contrast reports the benchmarks it skipped as failures.
+    #
+    # Not hypothetical, and not subtle in its consequences: with fusion run on FATE-M only, where it
+    # solved 70 against late interaction's 64, the pooled contrast reported fusion -34 problems at
+    # p = 0.0000 with the CI and permutation test agreeing. Maximum confidence, wrong sign. The
+    # per-benchmark sections above are where such an arm is legitimately compared.
+    complete = set.intersection(*arms_seen.values()) if arms_seen else set()
+    partial = sorted(set(pooled) - complete)
+    if partial:
+        print("\n" + "=" * 78)
+        for arm in partial:
+            ran_on = sorted(b for b, a in arms_seen.items() if arm in a)
+            print(f"NOT POOLED: {arm!r} ran on {ran_on} only, not on "
+                  f"{sorted(set(arms_seen) - set(ran_on))}. Pooling it would score the benchmarks "
+                  f"it skipped as failures. See its per-benchmark contrast above.")
+        pooled = {a: v for a, v in pooled.items() if a in complete}
+    if len(pooled) < 2:
+        print("Fewer than two arms span every benchmark, so there is no pooled contrast to make.")
+        return
 
+    arms = sorted(pooled)
+    ids = sorted(pooled_attempted)
     print(f"\n{'=' * 78}\nPOOLED  ({len(ids)} problems)\n{'=' * 78}")
-    print(f"  li {len(li)}  sv {len(sv)}  ensemble {len(li | sv)}  "
-          f"({100 * len(li | sv) / len(ids):.1f}%)")
-    print(f"  li only {len(li - sv)} | sv only {len(sv - li)}   "
-          f"McNemar p = {mcnemar_exact_p(len(li - sv), len(sv - li)):.4f}")
-    print(f"  effect li - sv = {d.sum():+.0f} problems ({100 * d.mean():+.2f} pts)")
-    print(f"  paired bootstrap 95% CI [{100 * lo:+.2f}, {100 * hi:+.2f}] pts")
-    print(f"  sign-flip permutation p = {perm_p:.4f}")
-    # The two must agree. A CI excluding zero beside a non-significant permutation p (or the
-    # reverse) means one of them is being read wrongly, and the pass@1 analysis treats their
-    # agreement as the gate rather than picking whichever is kinder.
-    agree = (lo <= 0 <= hi) == (perm_p >= 0.05)
-    print(f"  CI and permutation agree: {'yes' if agree else 'NO — do not report either'}")
+    for arm in arms:
+        print(f"  {arm:12} {len(pooled[arm]):3}")
+    print(f"  {'ENSEMBLE':12} {len(set().union(*pooled.values())):3}  "
+          f"({100 * len(set().union(*pooled.values())) / len(ids):.1f}%)")
+    for i, a in enumerate(arms):
+        for b in arms[i + 1:]:
+            contrast(a, pooled[a], b, pooled[b], pooled_attempted, rng, args.n_boot, args.n_perm)
 
 
 if __name__ == "__main__":

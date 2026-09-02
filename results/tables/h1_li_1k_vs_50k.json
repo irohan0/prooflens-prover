@@ -1,0 +1,112 @@
+{
+  "primary": {
+    "benchmark": "fate_m",
+    "baseline": {
+      "arm": "li",
+      "label": "li@1k",
+      "run_id": "fate_m_li_repertoire_20260805T235301456252_42e2fb4-dirty",
+      "n_candidates": 1000,
+      "proved": 22
+    },
+    "treatment": {
+      "arm": "li",
+      "label": "li@50k",
+      "run_id": "fate_m_li_repertoire_20260806T142331153271_5a6054c-dirty",
+      "n_candidates": 50000,
+      "proved": 31
+    },
+    "n_problems": 141,
+    "excluded_harness_errors": false,
+    "delta_problems": 9,
+    "delta_rate": 0.06382978723404255,
+    "only_treatment": [
+      "1108",
+      "195",
+      "2024",
+      "282",
+      "378",
+      "436",
+      "6123",
+      "628",
+      "901"
+    ],
+    "only_baseline": [],
+    "baseline_is_subset": true,
+    "ci95": [
+      0.028368794326241134,
+      0.10638297872340426
+    ],
+    "p_permutation": 0.0027997200279972004,
+    "p_mcnemar_exact": 0.00390625,
+    "significant": true,
+    "borderline": false,
+    "premise_used_rate": 0.8387096774193549,
+    "premise_needed_rate": 1.0,
+    "marginal_with_premise": [
+      "1108",
+      "195",
+      "2024",
+      "282",
+      "378",
+      "436",
+      "6123",
+      "628",
+      "901"
+    ]
+  },
+  "sensitivity": {
+    "benchmark": "fate_m",
+    "baseline": {
+      "arm": "li",
+      "label": "li@1k",
+      "run_id": "fate_m_li_repertoire_20260805T235301456252_42e2fb4-dirty",
+      "n_candidates": 1000,
+      "proved": 22
+    },
+    "treatment": {
+      "arm": "li",
+      "label": "li@50k",
+      "run_id": "fate_m_li_repertoire_20260806T142331153271_5a6054c-dirty",
+      "n_candidates": 50000,
+      "proved": 31
+    },
+    "n_problems": 140,
+    "excluded_harness_errors": true,
+    "delta_problems": 9,
+    "delta_rate": 0.06428571428571428,
+    "only_treatment": [
+      "1108",
+      "195",
+      "2024",
+      "282",
+      "378",
+      "436",
+      "6123",
+      "628",
+      "901"
+    ],
+    "only_baseline": [],
+    "baseline_is_subset": true,
+    "ci95": [
+      0.02857142857142857,
+      0.10714285714285714
+    ],
+    "p_permutation": 0.0027997200279972004,
+    "p_mcnemar_exact": 0.00390625,
+    "significant": true,
+    "borderline": false,
+    "premise_used_rate": 0.8387096774193549,
+    "premise_needed_rate": 1.0,
+    "marginal_with_premise": [
+      "1108",
+      "195",
+      "2024",
+      "282",
+      "378",
+      "436",
+      "6123",
+      "628",
+      "901"
+    ]
+  }
+}

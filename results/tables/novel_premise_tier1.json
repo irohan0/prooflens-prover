@@ -1,0 +1,3708 @@
+{
+  "benchmarks": [
+    "fate_m",
+    "proofnet_test"
+  ],
+  "n_shared_problems": 327,
+  "n_seen_premises": 62500,
+  "n_seen_premises_in_corpus": 60169,
+  "n_corpus_premises": 276108,
+  "unseen_base_rate": 0.7820816492097296,
+  "drop_tactic_words": false,
+  "per_arm": {
+    "none": {
+      "n_problems": 63,
+      "n_problems_citing_any_premise": 63,
+      "n_citing_unseen": 57,
+      "rate": 0.9047619047619048,
+      "mean_fraction_unseen": 0.4124922307132147,
+      "mean_n_cited": 7.714285714285714,
+      "mean_n_unseen": 2.9365079365079363,
+      "fractions": [
+        0.16666666666666666,
+        0.3333333333333333,
+        0.0,
+        0.7,
+        0.375,
+        0.23076923076923078,
+        0.1875,
+        0.375,
+        0.75,
+        0.2,
+        0.5555555555555556,
+        0.2857142857142857,
+        0.5,
+        0.4444444444444444,
+        0.0,
+        1.0,
+        0.5,
+        0.0,
+        0.5,
+        0.5,
+        0.3333333333333333,
+        0.2857142857142857,
+        0.3888888888888889,
+        0.4444444444444444,
+        0.6666666666666666,
+        1.0,
+        0.3333333333333333,
+        0.5,
+        0.35714285714285715,
+        0.2,
+        0.125,
+        0.14285714285714285,
+        0.2,
+        0.4,
+        0.4782608695652174,
+        0.5,
+        0.5,
+        0.5,
+        0.5714285714285714,
+        0.5,
+        0.5555555555555556,
+        0.2,
+        0.36363636363636365,
+        0.4,
+        0.625,
+        0.5,
+        0.4117647058823529,
+        0.6666666666666666,
+        0.5,
+        0.3333333333333333,
+        0.2,
+        0.3333333333333333,
+        0.0,
+        0.2,
+        0.75,
+        0.0,
+        0.6666666666666666,
+        0.0,
+        1.0,
+        0.5,
+        0.25,
+        1.0,
+        0.5
+      ],
+      "problems": [
+        {
+          "problem_id": "fate_m:1087",
+          "n_cited": 12,
+          "n_unseen": 2,
+          "fraction_unseen": 0.16666666666666666,
+          "unseen": [
+            "fun",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1103",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1276",
+          "n_cited": 6,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:1336",
+          "n_cited": 10,
+          "n_unseen": 7,
+          "fraction_unseen": 0.7,
+          "unseen": [
+            "fun",
+            "h\u2081",
+            "h\u2082",
+            "let",
+            "obtain",
+            "refine",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1457",
+          "n_cited": 8,
+          "n_unseen": 3,
+          "fraction_unseen": 0.375,
+          "unseen": [
+            "Subgroup.ext_iff",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1597",
+          "n_cited": 13,
+          "n_unseen": 3,
+          "fraction_unseen": 0.23076923076923078,
+          "unseen": [
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1599",
+          "n_cited": 16,
+          "n_unseen": 3,
+          "fraction_unseen": 0.1875,
+          "unseen": [
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:162",
+          "n_cited": 8,
+          "n_unseen": 3,
+          "fraction_unseen": 0.375,
+          "unseen": [
+            "heq",
+            "obtain",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1962",
+          "n_cited": 4,
+          "n_unseen": 3,
+          "fraction_unseen": 0.75,
+          "unseen": [
+            "funext_iff",
+            "simp",
+            "tauto"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1989",
+          "n_cited": 20,
+          "n_unseen": 4,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "only",
+            "refine",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1990",
+          "n_cited": 9,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5555555555555556,
+          "unseen": [
+            "convert",
+            "fun",
+            "m",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:205",
+          "n_cited": 21,
+          "n_unseen": 6,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "have",
+            "hf",
+            "obtain",
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:241",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:2439",
+          "n_cited": 9,
+          "n_unseen": 4,
+          "fraction_unseen": 0.4444444444444444,
+          "unseen": [
+            "H",
+            "Subgroup.ext",
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:252",
+          "n_cited": 3,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:253",
+          "n_cited": 4,
+          "n_unseen": 4,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "fun",
+            "hx",
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:273",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "h\u2081",
+            "h\u2082"
+          ]
+        },
+        {
+          "problem_id": "fate_m:282",
+          "n_cited": 2,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:284",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "aesop",
+            "have",
+            "h\u2081",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:40",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "Fintype.card_pi_const",
+            "G"
+          ]
+        },
+        {
+          "problem_id": "fate_m:424",
+          "n_cited": 18,
+          "n_unseen": 6,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "fun",
+            "ha",
+            "only",
+            "refine",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:4343",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "G",
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:4649",
+          "n_cited": 18,
+          "n_unseen": 7,
+          "fraction_unseen": 0.3888888888888889,
+          "unseen": [
+            "Prod.fst_mul",
+            "Prod.snd_mul",
+            "fun",
+            "have",
+            "only",
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:544",
+          "n_cited": 9,
+          "n_unseen": 4,
+          "fraction_unseen": 0.4444444444444444,
+          "unseen": [
+            "induction'",
+            "rw",
+            "simp",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "fate_m:6123",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "H",
+            "subgroup_solvable_of_solvable"
+          ]
+        },
+        {
+          "problem_id": "fate_m:628",
+          "n_cited": 3,
+          "n_unseen": 3,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "Prod.orderOf_mk",
+            "only",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7415",
+          "n_cited": 12,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "Nat.reduceMul",
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7466",
+          "n_cited": 8,
+          "n_unseen": 4,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "hp",
+            "obtain",
+            "only",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7532",
+          "n_cited": 14,
+          "n_unseen": 5,
+          "fraction_unseen": 0.35714285714285715,
+          "unseen": [
+            "aesop",
+            "only",
+            "rw",
+            "simp",
+            "tauto"
+          ]
+        },
+        {
+          "problem_id": "fate_m:821",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:823",
+          "n_cited": 8,
+          "n_unseen": 1,
+          "fraction_unseen": 0.125,
+          "unseen": [
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:824",
+          "n_cited": 7,
+          "n_unseen": 1,
+          "fraction_unseen": 0.14285714285714285,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:826",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "calc",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:917",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "constructor",
+            "exacts"
+          ]
+        },
+        {
+          "problem_id": "fate_m:946",
+          "n_cited": 23,
+          "n_unseen": 11,
+          "fraction_unseen": 0.4782608695652174,
+          "unseen": [
+            "G",
+            "aesop",
+            "calc",
+            "constructor",
+            "have",
+            "let",
+            "only",
+            "refine",
+            "rw",
+            "simp",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:947",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "k",
+            "rintro",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:951",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "exacts",
+            "fun",
+            "hy",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:959",
+          "n_cited": 2,
+          "n_unseen": 1,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:968",
+          "n_cited": 7,
+          "n_unseen": 4,
+          "fraction_unseen": 0.5714285714285714,
+          "unseen": [
+            "fun",
+            "only",
+            "refine",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:193",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "fun",
+            "hx"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:194",
+          "n_cited": 9,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5555555555555556,
+          "unseen": [
+            "h\u2080",
+            "h\u2081",
+            "h\u2082",
+            "obtain",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:196",
+          "n_cited": 5,
+          "n_unseen": 1,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:197",
+          "n_cited": 11,
+          "n_unseen": 4,
+          "fraction_unseen": 0.36363636363636365,
+          "unseen": [
+            "norm_num",
+            "ring",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:199",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "fun",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:218",
+          "n_cited": 8,
+          "n_unseen": 5,
+          "fraction_unseen": 0.625,
+          "unseen": [
+            "fun",
+            "hg'",
+            "linarith",
+            "rcases",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:223",
+          "n_cited": 2,
+          "n_unseen": 1,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:242",
+          "n_cited": 17,
+          "n_unseen": 7,
+          "fraction_unseen": 0.4117647058823529,
+          "unseen": [
+            "have",
+            "hp",
+            "induction'",
+            "ring",
+            "rw",
+            "simp",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:243",
+          "n_cited": 9,
+          "n_unseen": 6,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "IsIntegral.of_pow",
+            "ha",
+            "only",
+            "refine",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:247",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:253",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:255",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:268",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:281",
+          "n_cited": 1,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:282",
+          "n_cited": 5,
+          "n_unseen": 1,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:283",
+          "n_cited": 4,
+          "n_unseen": 3,
+          "fraction_unseen": 0.75,
+          "unseen": [
+            "List.prod_inv_reverse",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:285",
+          "n_cited": 4,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:299",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "H",
+            "solvable_quotient_of_solvable"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:312",
+          "n_cited": 2,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:313",
+          "n_cited": 1,
+          "n_unseen": 1,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "constructor"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:332",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "hf",
+            "hg"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:358",
+          "n_cited": 12,
+          "n_unseen": 3,
+          "fraction_unseen": 0.25,
+          "unseen": [
+            "norm_num",
+            "obtain",
+            "rintro"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:365",
+          "n_cited": 2,
+          "n_unseen": 2,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:366",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "fun",
+            "simp"
+          ]
+        }
+      ]
+    },
+    "sv": {
+      "n_problems": 74,
+      "n_problems_citing_any_premise": 73,
+      "n_citing_unseen": 66,
+      "rate": 0.8918918918918919,
+      "mean_fraction_unseen": 0.4050401205434838,
+      "mean_n_cited": 7.5,
+      "mean_n_unseen": 2.7972972972972974,
+      "fractions": [
+        0.3333333333333333,
+        0.0,
+        0.7,
+        0.375,
+        0.3333333333333333,
+        0.0,
+        0.23076923076923078,
+        0.1875,
+        0.375,
+        0.75,
+        0.2,
+        0.2857142857142857,
+        0.29411764705882354,
+        0.2857142857142857,
+        0.5,
+        0.4444444444444444,
+        0.0,
+        1.0,
+        0.5,
+        0.0,
+        0.5,
+        0.3,
+        0.2857142857142857,
+        0.5,
+        0.3333333333333333,
+        0.5,
+        0.3333333333333333,
+        0.2857142857142857,
+        0.42857142857142855,
+        0.3888888888888889,
+        0.4444444444444444,
+        0.6666666666666666,
+        1.0,
+        0.2,
+        0.3333333333333333,
+        0.5,
+        0.2,
+        0.125,
+        0.14285714285714285,
+        0.2,
+        0.4,
+        0.4782608695652174,
+        0.5,
+        0.5,
+        0.5,
+        0.5714285714285714,
+        0.5,
+        0.5555555555555556,
+        0.2,
+        0.36363636363636365,
+        0.4,
+        0.25,
+        0.625,
+        0.5,
+        0.6666666666666666,
+        0.3333333333333333,
+        0.2,
+        1.0,
+        0.3333333333333333,
+        0.0,
+        0.2,
+        0.75,
+        0.0,
+        0.3076923076923077,
+        0.6666666666666666,
+        0.3333333333333333,
+        0.6666666666666666,
+        0.42857142857142855,
+        0.0,
+        1.0,
+        0.625,
+        0.25,
+        1.0
+      ],
+      "problems": [
+        {
+          "problem_id": "fate_m:1103",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1276",
+          "n_cited": 6,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:1336",
+          "n_cited": 10,
+          "n_unseen": 7,
+          "fraction_unseen": 0.7,
+          "unseen": [
+            "fun",
+            "h\u2081",
+            "h\u2082",
+            "let",
+            "obtain",
+            "refine",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1457",
+          "n_cited": 8,
+          "n_unseen": 3,
+          "fraction_unseen": 0.375,
+          "unseen": [
+            "Subgroup.ext_iff",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1569",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "Sylow.normalizer_normalizer"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1595",
+          "n_cited": 3,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:1597",
+          "n_cited": 13,
+          "n_unseen": 3,
+          "fraction_unseen": 0.23076923076923078,
+          "unseen": [
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1599",
+          "n_cited": 16,
+          "n_unseen": 3,
+          "fraction_unseen": 0.1875,
+          "unseen": [
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:162",
+          "n_cited": 8,
+          "n_unseen": 3,
+          "fraction_unseen": 0.375,
+          "unseen": [
+            "heq",
+            "obtain",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1962",
+          "n_cited": 4,
+          "n_unseen": 3,
+          "fraction_unseen": 0.75,
+          "unseen": [
+            "funext_iff",
+            "simp",
+            "tauto"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1989",
+          "n_cited": 20,
+          "n_unseen": 4,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "only",
+            "refine",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1998",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "h\u2081",
+            "h\u2082"
+          ]
+        },
+        {
+          "problem_id": "fate_m:200",
+          "n_cited": 17,
+          "n_unseen": 5,
+          "fraction_unseen": 0.29411764705882354,
+          "unseen": [
+            "fun",
+            "only",
+            "refine",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:205",
+          "n_cited": 21,
+          "n_unseen": 6,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "have",
+            "hf",
+            "obtain",
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:241",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:2439",
+          "n_cited": 9,
+          "n_unseen": 4,
+          "fraction_unseen": 0.4444444444444444,
+          "unseen": [
+            "H",
+            "Subgroup.ext",
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:252",
+          "n_cited": 3,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:253",
+          "n_cited": 4,
+          "n_unseen": 4,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "fun",
+            "hx",
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:273",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "h\u2081",
+            "h\u2082"
+          ]
+        },
+        {
+          "problem_id": "fate_m:282",
+          "n_cited": 2,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:284",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "aesop",
+            "have",
+            "h\u2081",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:2880",
+          "n_cited": 10,
+          "n_unseen": 3,
+          "fraction_unseen": 0.3,
+          "unseen": [
+            "have",
+            "hx",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:336",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "fun",
+            "hp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:380",
+          "n_cited": 12,
+          "n_unseen": 6,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "clear",
+            "h\u2081",
+            "h\u2082",
+            "h\u2083",
+            "only",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:384",
+          "n_cited": 9,
+          "n_unseen": 3,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "rcases",
+            "simp",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "fate_m:40",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "Fintype.card_pi_const",
+            "G"
+          ]
+        },
+        {
+          "problem_id": "fate_m:424",
+          "n_cited": 18,
+          "n_unseen": 6,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "fun",
+            "ha",
+            "only",
+            "refine",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:4343",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "G",
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:436",
+          "n_cited": 7,
+          "n_unseen": 3,
+          "fraction_unseen": 0.42857142857142855,
+          "unseen": [
+            "fun",
+            "linarith",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:4649",
+          "n_cited": 18,
+          "n_unseen": 7,
+          "fraction_unseen": 0.3888888888888889,
+          "unseen": [
+            "Prod.fst_mul",
+            "Prod.snd_mul",
+            "fun",
+            "have",
+            "only",
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:544",
+          "n_cited": 9,
+          "n_unseen": 4,
+          "fraction_unseen": 0.4444444444444444,
+          "unseen": [
+            "induction'",
+            "rw",
+            "simp",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "fate_m:6123",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "H",
+            "subgroup_solvable_of_solvable"
+          ]
+        },
+        {
+          "problem_id": "fate_m:628",
+          "n_cited": 3,
+          "n_unseen": 3,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "Prod.orderOf_mk",
+            "only",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7125",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "constructor",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7415",
+          "n_cited": 12,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "Nat.reduceMul",
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7466",
+          "n_cited": 8,
+          "n_unseen": 4,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "hp",
+            "obtain",
+            "only",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:821",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:823",
+          "n_cited": 8,
+          "n_unseen": 1,
+          "fraction_unseen": 0.125,
+          "unseen": [
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:824",
+          "n_cited": 7,
+          "n_unseen": 1,
+          "fraction_unseen": 0.14285714285714285,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:826",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "calc",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:917",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "constructor",
+            "exacts"
+          ]
+        },
+        {
+          "problem_id": "fate_m:946",
+          "n_cited": 23,
+          "n_unseen": 11,
+          "fraction_unseen": 0.4782608695652174,
+          "unseen": [
+            "G",
+            "aesop",
+            "calc",
+            "constructor",
+            "have",
+            "let",
+            "only",
+            "refine",
+            "rw",
+            "simp",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:947",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "k",
+            "rintro",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:951",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "exacts",
+            "fun",
+            "hy",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:959",
+          "n_cited": 2,
+          "n_unseen": 1,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:968",
+          "n_cited": 7,
+          "n_unseen": 4,
+          "fraction_unseen": 0.5714285714285714,
+          "unseen": [
+            "fun",
+            "only",
+            "refine",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:193",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "fun",
+            "hx"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:194",
+          "n_cited": 9,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5555555555555556,
+          "unseen": [
+            "h\u2080",
+            "h\u2081",
+            "h\u2082",
+            "obtain",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:196",
+          "n_cited": 5,
+          "n_unseen": 1,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:197",
+          "n_cited": 11,
+          "n_unseen": 4,
+          "fraction_unseen": 0.36363636363636365,
+          "unseen": [
+            "norm_num",
+            "ring",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:199",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "fun",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:210",
+          "n_cited": 4,
+          "n_unseen": 1,
+          "fraction_unseen": 0.25,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:218",
+          "n_cited": 8,
+          "n_unseen": 5,
+          "fraction_unseen": 0.625,
+          "unseen": [
+            "fun",
+            "hg'",
+            "linarith",
+            "rcases",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:223",
+          "n_cited": 2,
+          "n_unseen": 1,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:243",
+          "n_cited": 9,
+          "n_unseen": 6,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "IsIntegral.of_pow",
+            "ha",
+            "only",
+            "refine",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:253",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:255",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:261",
+          "n_cited": 1,
+          "n_unseen": 1,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "Ideal.mul_eq_inf_of_coprime"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:268",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:281",
+          "n_cited": 1,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:282",
+          "n_cited": 5,
+          "n_unseen": 1,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:283",
+          "n_cited": 4,
+          "n_unseen": 3,
+          "fraction_unseen": 0.75,
+          "unseen": [
+            "List.prod_inv_reverse",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:285",
+          "n_cited": 4,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:289",
+          "n_cited": 13,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3076923076923077,
+          "unseen": [
+            "MulEquiv.mk'",
+            "fun",
+            "let",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:294",
+          "n_cited": 0,
+          "n_unseen": 0,
+          "fraction_unseen": null,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:295",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "Subgroup.inf_eq_bot_of_coprime",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:296",
+          "n_cited": 12,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "have",
+            "hp",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:299",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "H",
+            "solvable_quotient_of_solvable"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:307",
+          "n_cited": 7,
+          "n_unseen": 3,
+          "fraction_unseen": 0.42857142857142855,
+          "unseen": [
+            "haveI",
+            "norm_num",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:312",
+          "n_cited": 2,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:313",
+          "n_cited": 1,
+          "n_unseen": 1,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "constructor"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:316",
+          "n_cited": 8,
+          "n_unseen": 5,
+          "fraction_unseen": 0.625,
+          "unseen": [
+            "IsNilpotent.isUnit_one_sub",
+            "ha",
+            "obtain",
+            "refine",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:358",
+          "n_cited": 12,
+          "n_unseen": 3,
+          "fraction_unseen": 0.25,
+          "unseen": [
+            "norm_num",
+            "obtain",
+            "rintro"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:365",
+          "n_cited": 2,
+          "n_unseen": 2,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "refine",
+            "simp"
+          ]
+        }
+      ]
+    },
+    "li@50k": {
+      "n_problems": 74,
+      "n_problems_citing_any_premise": 73,
+      "n_citing_unseen": 66,
+      "rate": 0.8918918918918919,
+      "mean_fraction_unseen": 0.40771242920894324,
+      "mean_n_cited": 6.756756756756757,
+      "mean_n_unseen": 2.608108108108108,
+      "fractions": [
+        0.3333333333333333,
+        0.5,
+        0.5555555555555556,
+        0.0,
+        0.375,
+        0.3333333333333333,
+        0.4375,
+        0.0,
+        0.1875,
+        0.375,
+        0.75,
+        0.5555555555555556,
+        0.29411764705882354,
+        0.25,
+        0.5,
+        0.4444444444444444,
+        0.0,
+        1.0,
+        0.5,
+        0.0,
+        0.5,
+        0.3,
+        0.2857142857142857,
+        0.3333333333333333,
+        0.2857142857142857,
+        0.4,
+        0.3333333333333333,
+        0.5,
+        0.2857142857142857,
+        0.42857142857142855,
+        0.4444444444444444,
+        0.6666666666666666,
+        1.0,
+        0.5,
+        0.35714285714285715,
+        0.2,
+        0.125,
+        0.14285714285714285,
+        0.2,
+        0.5,
+        0.4,
+        0.4782608695652174,
+        0.5,
+        0.5,
+        0.5,
+        0.5714285714285714,
+        0.5,
+        0.5555555555555556,
+        0.2,
+        0.4,
+        0.25,
+        0.625,
+        0.5,
+        0.3333333333333333,
+        0.2,
+        0.8,
+        0.3333333333333333,
+        0.0,
+        0.2,
+        0.75,
+        0.3333333333333333,
+        0.0,
+        0.3076923076923077,
+        0.6666666666666666,
+        0.3333333333333333,
+        0.6666666666666666,
+        0.42857142857142855,
+        0.0,
+        1.0,
+        0.5,
+        0.25,
+        1.0,
+        0.5
+      ],
+      "problems": [
+        {
+          "problem_id": "fate_m:1103",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1108",
+          "n_cited": 6,
+          "n_unseen": 3,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "Subgroup.inf_eq_bot_of_coprime",
+            "only",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1144",
+          "n_cited": 9,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5555555555555556,
+          "unseen": [
+            "G",
+            "commGroupOfCyclicCenterQuotient",
+            "hc",
+            "letI",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1276",
+          "n_cited": 6,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:1457",
+          "n_cited": 8,
+          "n_unseen": 3,
+          "fraction_unseen": 0.375,
+          "unseen": [
+            "Subgroup.ext_iff",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1569",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "Sylow.normalizer_normalizer"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1581",
+          "n_cited": 16,
+          "n_unseen": 7,
+          "fraction_unseen": 0.4375,
+          "unseen": [
+            "constructor",
+            "hg",
+            "let",
+            "rcases",
+            "simp",
+            "simpa",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1595",
+          "n_cited": 3,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:1599",
+          "n_cited": 16,
+          "n_unseen": 3,
+          "fraction_unseen": 0.1875,
+          "unseen": [
+            "only",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:162",
+          "n_cited": 8,
+          "n_unseen": 3,
+          "fraction_unseen": 0.375,
+          "unseen": [
+            "heq",
+            "obtain",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1962",
+          "n_cited": 4,
+          "n_unseen": 3,
+          "fraction_unseen": 0.75,
+          "unseen": [
+            "funext_iff",
+            "simp",
+            "tauto"
+          ]
+        },
+        {
+          "problem_id": "fate_m:1990",
+          "n_cited": 9,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5555555555555556,
+          "unseen": [
+            "convert",
+            "fun",
+            "m",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:200",
+          "n_cited": 17,
+          "n_unseen": 5,
+          "fraction_unseen": 0.29411764705882354,
+          "unseen": [
+            "fun",
+            "only",
+            "refine",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:2180",
+          "n_cited": 12,
+          "n_unseen": 3,
+          "fraction_unseen": 0.25,
+          "unseen": [
+            "MulAction.stabilizer_smul_eq_stabilizer_map_conj",
+            "only",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:241",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:2439",
+          "n_cited": 9,
+          "n_unseen": 4,
+          "fraction_unseen": 0.4444444444444444,
+          "unseen": [
+            "H",
+            "Subgroup.ext",
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:252",
+          "n_cited": 3,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:253",
+          "n_cited": 4,
+          "n_unseen": 4,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "fun",
+            "hx",
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:273",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "h\u2081",
+            "h\u2082"
+          ]
+        },
+        {
+          "problem_id": "fate_m:282",
+          "n_cited": 2,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "fate_m:284",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "aesop",
+            "have",
+            "h\u2081",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:2880",
+          "n_cited": 10,
+          "n_unseen": 3,
+          "fraction_unseen": 0.3,
+          "unseen": [
+            "have",
+            "hx",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:326",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "have",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:334",
+          "n_cited": 12,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "Finite.isField_of_domain",
+            "Ideal.Quotient.isDomain_iff_prime",
+            "hI",
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:336",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "fun",
+            "hp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:378",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "IntermediateField.normal_sup",
+            "K"
+          ]
+        },
+        {
+          "problem_id": "fate_m:384",
+          "n_cited": 9,
+          "n_unseen": 3,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "rcases",
+            "simp",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "fate_m:40",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "Fintype.card_pi_const",
+            "G"
+          ]
+        },
+        {
+          "problem_id": "fate_m:4343",
+          "n_cited": 7,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2857142857142857,
+          "unseen": [
+            "G",
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:436",
+          "n_cited": 7,
+          "n_unseen": 3,
+          "fraction_unseen": 0.42857142857142855,
+          "unseen": [
+            "fun",
+            "linarith",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:544",
+          "n_cited": 9,
+          "n_unseen": 4,
+          "fraction_unseen": 0.4444444444444444,
+          "unseen": [
+            "induction'",
+            "rw",
+            "simp",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "fate_m:6123",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "H",
+            "subgroup_solvable_of_solvable"
+          ]
+        },
+        {
+          "problem_id": "fate_m:628",
+          "n_cited": 3,
+          "n_unseen": 3,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "Prod.orderOf_mk",
+            "only",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7466",
+          "n_cited": 8,
+          "n_unseen": 4,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "hp",
+            "obtain",
+            "only",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:7532",
+          "n_cited": 14,
+          "n_unseen": 5,
+          "fraction_unseen": 0.35714285714285715,
+          "unseen": [
+            "aesop",
+            "only",
+            "rw",
+            "simp",
+            "tauto"
+          ]
+        },
+        {
+          "problem_id": "fate_m:821",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:823",
+          "n_cited": 8,
+          "n_unseen": 1,
+          "fraction_unseen": 0.125,
+          "unseen": [
+            "have"
+          ]
+        },
+        {
+          "problem_id": "fate_m:824",
+          "n_cited": 7,
+          "n_unseen": 1,
+          "fraction_unseen": 0.14285714285714285,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:826",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "calc",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:867",
+          "n_cited": 6,
+          "n_unseen": 3,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "Equiv.Perm.IsCycle.pow_iff",
+            "Nat.coprime_two_left",
+            "cyc"
+          ]
+        },
+        {
+          "problem_id": "fate_m:917",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "constructor",
+            "exacts"
+          ]
+        },
+        {
+          "problem_id": "fate_m:946",
+          "n_cited": 23,
+          "n_unseen": 11,
+          "fraction_unseen": 0.4782608695652174,
+          "unseen": [
+            "G",
+            "aesop",
+            "calc",
+            "constructor",
+            "have",
+            "let",
+            "only",
+            "refine",
+            "rw",
+            "simp",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "fate_m:947",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "k",
+            "rintro",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "fate_m:951",
+          "n_cited": 10,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "constructor",
+            "exacts",
+            "fun",
+            "hy",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:959",
+          "n_cited": 2,
+          "n_unseen": 1,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "fate_m:968",
+          "n_cited": 7,
+          "n_unseen": 4,
+          "fraction_unseen": 0.5714285714285714,
+          "unseen": [
+            "fun",
+            "only",
+            "refine",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:193",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "fun",
+            "hx"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:194",
+          "n_cited": 9,
+          "n_unseen": 5,
+          "fraction_unseen": 0.5555555555555556,
+          "unseen": [
+            "h\u2080",
+            "h\u2081",
+            "h\u2082",
+            "obtain",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:196",
+          "n_cited": 5,
+          "n_unseen": 1,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:199",
+          "n_cited": 5,
+          "n_unseen": 2,
+          "fraction_unseen": 0.4,
+          "unseen": [
+            "fun",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:210",
+          "n_cited": 4,
+          "n_unseen": 1,
+          "fraction_unseen": 0.25,
+          "unseen": [
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:218",
+          "n_cited": 8,
+          "n_unseen": 5,
+          "fraction_unseen": 0.625,
+          "unseen": [
+            "fun",
+            "hg'",
+            "linarith",
+            "rcases",
+            "with"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:223",
+          "n_cited": 2,
+          "n_unseen": 1,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:253",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:255",
+          "n_cited": 10,
+          "n_unseen": 2,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "have",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:262",
+          "n_cited": 5,
+          "n_unseen": 4,
+          "fraction_unseen": 0.8,
+          "unseen": [
+            "Int.ofNat_dvd",
+            "config",
+            "contextual",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:268",
+          "n_cited": 3,
+          "n_unseen": 1,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:281",
+          "n_cited": 1,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:282",
+          "n_cited": 5,
+          "n_unseen": 1,
+          "fraction_unseen": 0.2,
+          "unseen": [
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:283",
+          "n_cited": 4,
+          "n_unseen": 3,
+          "fraction_unseen": 0.75,
+          "unseen": [
+            "List.prod_inv_reverse",
+            "rw",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:284",
+          "n_cited": 6,
+          "n_unseen": 2,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "rw",
+            "zpow_natCast_sub_one"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:285",
+          "n_cited": 4,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:289",
+          "n_cited": 13,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3076923076923077,
+          "unseen": [
+            "MulEquiv.mk'",
+            "fun",
+            "let",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:294",
+          "n_cited": 0,
+          "n_unseen": 0,
+          "fraction_unseen": null,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:295",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "Subgroup.inf_eq_bot_of_coprime",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:296",
+          "n_cited": 12,
+          "n_unseen": 4,
+          "fraction_unseen": 0.3333333333333333,
+          "unseen": [
+            "have",
+            "hp",
+            "rw",
+            "simpa"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:299",
+          "n_cited": 3,
+          "n_unseen": 2,
+          "fraction_unseen": 0.6666666666666666,
+          "unseen": [
+            "H",
+            "solvable_quotient_of_solvable"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:307",
+          "n_cited": 7,
+          "n_unseen": 3,
+          "fraction_unseen": 0.42857142857142855,
+          "unseen": [
+            "haveI",
+            "norm_num",
+            "rw"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:312",
+          "n_cited": 2,
+          "n_unseen": 0,
+          "fraction_unseen": 0.0,
+          "unseen": []
+        },
+        {
+          "problem_id": "proofnet_test:313",
+          "n_cited": 1,
+          "n_unseen": 1,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "constructor"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:332",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "hf",
+            "hg"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:358",
+          "n_cited": 12,
+          "n_unseen": 3,
+          "fraction_unseen": 0.25,
+          "unseen": [
+            "norm_num",
+            "obtain",
+            "rintro"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:365",
+          "n_cited": 2,
+          "n_unseen": 2,
+          "fraction_unseen": 1.0,
+          "unseen": [
+            "refine",
+            "simp"
+          ]
+        },
+        {
+          "problem_id": "proofnet_test:366",
+          "n_cited": 4,
+          "n_unseen": 2,
+          "fraction_unseen": 0.5,
+          "unseen": [
+            "fun",
+            "simp"
+          ]
+        }
+      ]
+    }
+  },
+  "contrasts": [
+    {
+      "contrast": "sv vs none",
+      "only_none": {
+        "n_problems": 7,
+        "n_problems_citing_any_premise": 7,
+        "n_citing_unseen": 7,
+        "rate": 1.0,
+        "mean_fraction_unseen": 0.42730425503534747,
+        "mean_n_cited": 9.142857142857142,
+        "mean_n_unseen": 3.5714285714285716,
+        "fractions": [
+          0.16666666666666666,
+          0.5555555555555556,
+          0.35714285714285715,
+          0.4117647058823529,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "problems": [
+          {
+            "problem_id": "fate_m:1087",
+            "n_cited": 12,
+            "n_unseen": 2,
+            "fraction_unseen": 0.16666666666666666,
+            "unseen": [
+              "fun",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1990",
+            "n_cited": 9,
+            "n_unseen": 5,
+            "fraction_unseen": 0.5555555555555556,
+            "unseen": [
+              "convert",
+              "fun",
+              "m",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:7532",
+            "n_cited": 14,
+            "n_unseen": 5,
+            "fraction_unseen": 0.35714285714285715,
+            "unseen": [
+              "aesop",
+              "only",
+              "rw",
+              "simp",
+              "tauto"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:242",
+            "n_cited": 17,
+            "n_unseen": 7,
+            "fraction_unseen": 0.4117647058823529,
+            "unseen": [
+              "have",
+              "hp",
+              "induction'",
+              "ring",
+              "rw",
+              "simp",
+              "with"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:247",
+            "n_cited": 4,
+            "n_unseen": 2,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "refine",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:332",
+            "n_cited": 4,
+            "n_unseen": 2,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "hf",
+              "hg"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:366",
+            "n_cited": 4,
+            "n_unseen": 2,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "fun",
+              "simp"
+            ]
+          }
+        ]
+      },
+      "only_sv": {
+        "n_problems": 18,
+        "n_problems_citing_any_premise": 17,
+        "n_citing_unseen": 16,
+        "rate": 0.8888888888888888,
+        "mean_fraction_unseen": 0.38659106176407215,
+        "mean_n_cited": 7.388888888888889,
+        "mean_n_unseen": 2.611111111111111,
+        "fractions": [
+          0.3333333333333333,
+          0.0,
+          0.2857142857142857,
+          0.29411764705882354,
+          0.3,
+          0.2857142857142857,
+          0.5,
+          0.3333333333333333,
+          0.42857142857142855,
+          0.2,
+          0.25,
+          1.0,
+          0.3076923076923077,
+          0.6666666666666666,
+          0.3333333333333333,
+          0.42857142857142855,
+          0.625
+        ],
+        "problems": [
+          {
+            "problem_id": "fate_m:1569",
+            "n_cited": 3,
+            "n_unseen": 1,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "Sylow.normalizer_normalizer"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1595",
+            "n_cited": 3,
+            "n_unseen": 0,
+            "fraction_unseen": 0.0,
+            "unseen": []
+          },
+          {
+            "problem_id": "fate_m:1998",
+            "n_cited": 7,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "h\u2081",
+              "h\u2082"
+            ]
+          },
+          {
+            "problem_id": "fate_m:200",
+            "n_cited": 17,
+            "n_unseen": 5,
+            "fraction_unseen": 0.29411764705882354,
+            "unseen": [
+              "fun",
+              "only",
+              "refine",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:2880",
+            "n_cited": 10,
+            "n_unseen": 3,
+            "fraction_unseen": 0.3,
+            "unseen": [
+              "have",
+              "hx",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "fate_m:336",
+            "n_cited": 7,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "fun",
+              "hp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:380",
+            "n_cited": 12,
+            "n_unseen": 6,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "clear",
+              "h\u2081",
+              "h\u2082",
+              "h\u2083",
+              "only",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:384",
+            "n_cited": 9,
+            "n_unseen": 3,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "rcases",
+              "simp",
+              "with"
+            ]
+          },
+          {
+            "problem_id": "fate_m:436",
+            "n_cited": 7,
+            "n_unseen": 3,
+            "fraction_unseen": 0.42857142857142855,
+            "unseen": [
+              "fun",
+              "linarith",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:7125",
+            "n_cited": 10,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2,
+            "unseen": [
+              "constructor",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:210",
+            "n_cited": 4,
+            "n_unseen": 1,
+            "fraction_unseen": 0.25,
+            "unseen": [
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:261",
+            "n_cited": 1,
+            "n_unseen": 1,
+            "fraction_unseen": 1.0,
+            "unseen": [
+              "Ideal.mul_eq_inf_of_coprime"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:289",
+            "n_cited": 13,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3076923076923077,
+            "unseen": [
+              "MulEquiv.mk'",
+              "fun",
+              "let",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:294",
+            "n_cited": 0,
+            "n_unseen": 0,
+            "fraction_unseen": null,
+            "unseen": []
+          },
+          {
+            "problem_id": "proofnet_test:295",
+            "n_cited": 3,
+            "n_unseen": 2,
+            "fraction_unseen": 0.6666666666666666,
+            "unseen": [
+              "Subgroup.inf_eq_bot_of_coprime",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:296",
+            "n_cited": 12,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "have",
+              "hp",
+              "rw",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:307",
+            "n_cited": 7,
+            "n_unseen": 3,
+            "fraction_unseen": 0.42857142857142855,
+            "unseen": [
+              "haveI",
+              "norm_num",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:316",
+            "n_cited": 8,
+            "n_unseen": 5,
+            "fraction_unseen": 0.625,
+            "unseen": [
+              "IsNilpotent.isUnit_one_sub",
+              "ha",
+              "obtain",
+              "refine",
+              "rw"
+            ]
+          }
+        ]
+      },
+      "delta_mean_fraction_unseen": -0.040713193271275316,
+      "p_permutation_fraction": 0.6633336666333367,
+      "p_fisher_two_sided_indicator": 1.0,
+      "significant": false
+    },
+    {
+      "contrast": "li@50k vs none",
+      "only_none": {
+        "n_problems": 12,
+        "n_problems_citing_any_premise": 12,
+        "n_citing_unseen": 12,
+        "rate": 1.0,
+        "mean_fraction_unseen": 0.3817311229075935,
+        "mean_n_cited": 13.75,
+        "mean_n_unseen": 4.833333333333333,
+        "fractions": [
+          0.16666666666666666,
+          0.7,
+          0.23076923076923078,
+          0.2,
+          0.2857142857142857,
+          0.3333333333333333,
+          0.3888888888888889,
+          0.3333333333333333,
+          0.36363636363636365,
+          0.4117647058823529,
+          0.6666666666666666,
+          0.5
+        ],
+        "problems": [
+          {
+            "problem_id": "fate_m:1087",
+            "n_cited": 12,
+            "n_unseen": 2,
+            "fraction_unseen": 0.16666666666666666,
+            "unseen": [
+              "fun",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1336",
+            "n_cited": 10,
+            "n_unseen": 7,
+            "fraction_unseen": 0.7,
+            "unseen": [
+              "fun",
+              "h\u2081",
+              "h\u2082",
+              "let",
+              "obtain",
+              "refine",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1597",
+            "n_cited": 13,
+            "n_unseen": 3,
+            "fraction_unseen": 0.23076923076923078,
+            "unseen": [
+              "only",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1989",
+            "n_cited": 20,
+            "n_unseen": 4,
+            "fraction_unseen": 0.2,
+            "unseen": [
+              "only",
+              "refine",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:205",
+            "n_cited": 21,
+            "n_unseen": 6,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "have",
+              "hf",
+              "obtain",
+              "only",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:424",
+            "n_cited": 18,
+            "n_unseen": 6,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "fun",
+              "ha",
+              "only",
+              "refine",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:4649",
+            "n_cited": 18,
+            "n_unseen": 7,
+            "fraction_unseen": 0.3888888888888889,
+            "unseen": [
+              "Prod.fst_mul",
+              "Prod.snd_mul",
+              "fun",
+              "have",
+              "only",
+              "refine",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:7415",
+            "n_cited": 12,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "Nat.reduceMul",
+              "only",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:197",
+            "n_cited": 11,
+            "n_unseen": 4,
+            "fraction_unseen": 0.36363636363636365,
+            "unseen": [
+              "norm_num",
+              "ring",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:242",
+            "n_cited": 17,
+            "n_unseen": 7,
+            "fraction_unseen": 0.4117647058823529,
+            "unseen": [
+              "have",
+              "hp",
+              "induction'",
+              "ring",
+              "rw",
+              "simp",
+              "with"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:243",
+            "n_cited": 9,
+            "n_unseen": 6,
+            "fraction_unseen": 0.6666666666666666,
+            "unseen": [
+              "IsIntegral.of_pow",
+              "ha",
+              "only",
+              "refine",
+              "rw",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:247",
+            "n_cited": 4,
+            "n_unseen": 2,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "refine",
+              "simp"
+            ]
+          }
+        ]
+      },
+      "only_li@50k": {
+        "n_problems": 23,
+        "n_problems_citing_any_premise": 22,
+        "n_citing_unseen": 21,
+        "rate": 0.9130434782608695,
+        "mean_fraction_unseen": 0.37985319419142943,
+        "mean_n_cited": 7.782608695652174,
+        "mean_n_unseen": 2.869565217391304,
+        "fractions": [
+          0.5,
+          0.5555555555555556,
+          0.3333333333333333,
+          0.4375,
+          0.0,
+          0.29411764705882354,
+          0.25,
+          0.3,
+          0.2857142857142857,
+          0.3333333333333333,
+          0.2857142857142857,
+          0.4,
+          0.3333333333333333,
+          0.42857142857142855,
+          0.5,
+          0.25,
+          0.8,
+          0.3333333333333333,
+          0.3076923076923077,
+          0.6666666666666666,
+          0.3333333333333333,
+          0.42857142857142855
+        ],
+        "problems": [
+          {
+            "problem_id": "fate_m:1108",
+            "n_cited": 6,
+            "n_unseen": 3,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "Subgroup.inf_eq_bot_of_coprime",
+              "only",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1144",
+            "n_cited": 9,
+            "n_unseen": 5,
+            "fraction_unseen": 0.5555555555555556,
+            "unseen": [
+              "G",
+              "commGroupOfCyclicCenterQuotient",
+              "hc",
+              "letI",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1569",
+            "n_cited": 3,
+            "n_unseen": 1,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "Sylow.normalizer_normalizer"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1581",
+            "n_cited": 16,
+            "n_unseen": 7,
+            "fraction_unseen": 0.4375,
+            "unseen": [
+              "constructor",
+              "hg",
+              "let",
+              "rcases",
+              "simp",
+              "simpa",
+              "with"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1595",
+            "n_cited": 3,
+            "n_unseen": 0,
+            "fraction_unseen": 0.0,
+            "unseen": []
+          },
+          {
+            "problem_id": "fate_m:200",
+            "n_cited": 17,
+            "n_unseen": 5,
+            "fraction_unseen": 0.29411764705882354,
+            "unseen": [
+              "fun",
+              "only",
+              "refine",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:2180",
+            "n_cited": 12,
+            "n_unseen": 3,
+            "fraction_unseen": 0.25,
+            "unseen": [
+              "MulAction.stabilizer_smul_eq_stabilizer_map_conj",
+              "only",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:2880",
+            "n_cited": 10,
+            "n_unseen": 3,
+            "fraction_unseen": 0.3,
+            "unseen": [
+              "have",
+              "hx",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "fate_m:326",
+            "n_cited": 7,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "have",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:334",
+            "n_cited": 12,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "Finite.isField_of_domain",
+              "Ideal.Quotient.isDomain_iff_prime",
+              "hI",
+              "have"
+            ]
+          },
+          {
+            "problem_id": "fate_m:336",
+            "n_cited": 7,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "fun",
+              "hp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:378",
+            "n_cited": 5,
+            "n_unseen": 2,
+            "fraction_unseen": 0.4,
+            "unseen": [
+              "IntermediateField.normal_sup",
+              "K"
+            ]
+          },
+          {
+            "problem_id": "fate_m:384",
+            "n_cited": 9,
+            "n_unseen": 3,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "rcases",
+              "simp",
+              "with"
+            ]
+          },
+          {
+            "problem_id": "fate_m:436",
+            "n_cited": 7,
+            "n_unseen": 3,
+            "fraction_unseen": 0.42857142857142855,
+            "unseen": [
+              "fun",
+              "linarith",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:867",
+            "n_cited": 6,
+            "n_unseen": 3,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "Equiv.Perm.IsCycle.pow_iff",
+              "Nat.coprime_two_left",
+              "cyc"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:210",
+            "n_cited": 4,
+            "n_unseen": 1,
+            "fraction_unseen": 0.25,
+            "unseen": [
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:262",
+            "n_cited": 5,
+            "n_unseen": 4,
+            "fraction_unseen": 0.8,
+            "unseen": [
+              "Int.ofNat_dvd",
+              "config",
+              "contextual",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:284",
+            "n_cited": 6,
+            "n_unseen": 2,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "rw",
+              "zpow_natCast_sub_one"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:289",
+            "n_cited": 13,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3076923076923077,
+            "unseen": [
+              "MulEquiv.mk'",
+              "fun",
+              "let",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:294",
+            "n_cited": 0,
+            "n_unseen": 0,
+            "fraction_unseen": null,
+            "unseen": []
+          },
+          {
+            "problem_id": "proofnet_test:295",
+            "n_cited": 3,
+            "n_unseen": 2,
+            "fraction_unseen": 0.6666666666666666,
+            "unseen": [
+              "Subgroup.inf_eq_bot_of_coprime",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:296",
+            "n_cited": 12,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "have",
+              "hp",
+              "rw",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:307",
+            "n_cited": 7,
+            "n_unseen": 3,
+            "fraction_unseen": 0.42857142857142855,
+            "unseen": [
+              "haveI",
+              "norm_num",
+              "rw"
+            ]
+          }
+        ]
+      },
+      "delta_mean_fraction_unseen": -0.0018779287161640457,
+      "p_permutation_fraction": 0.9765023497650235,
+      "p_fisher_two_sided_indicator": 0.5361344537815126,
+      "significant": false
+    },
+    {
+      "contrast": "li@50k vs sv",
+      "only_sv": {
+        "n_problems": 14,
+        "n_problems_citing_any_premise": 14,
+        "n_citing_unseen": 14,
+        "rate": 1.0,
+        "mean_fraction_unseen": 0.4366468848611706,
+        "mean_n_cited": 12.142857142857142,
+        "mean_n_unseen": 4.5,
+        "fractions": [
+          0.7,
+          0.23076923076923078,
+          0.2,
+          0.2857142857142857,
+          0.2857142857142857,
+          0.5,
+          0.3333333333333333,
+          0.3888888888888889,
+          0.2,
+          0.3333333333333333,
+          0.36363636363636365,
+          0.6666666666666666,
+          1.0,
+          0.625
+        ],
+        "problems": [
+          {
+            "problem_id": "fate_m:1336",
+            "n_cited": 10,
+            "n_unseen": 7,
+            "fraction_unseen": 0.7,
+            "unseen": [
+              "fun",
+              "h\u2081",
+              "h\u2082",
+              "let",
+              "obtain",
+              "refine",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1597",
+            "n_cited": 13,
+            "n_unseen": 3,
+            "fraction_unseen": 0.23076923076923078,
+            "unseen": [
+              "only",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1989",
+            "n_cited": 20,
+            "n_unseen": 4,
+            "fraction_unseen": 0.2,
+            "unseen": [
+              "only",
+              "refine",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1998",
+            "n_cited": 7,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "h\u2081",
+              "h\u2082"
+            ]
+          },
+          {
+            "problem_id": "fate_m:205",
+            "n_cited": 21,
+            "n_unseen": 6,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "have",
+              "hf",
+              "obtain",
+              "only",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:380",
+            "n_cited": 12,
+            "n_unseen": 6,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "clear",
+              "h\u2081",
+              "h\u2082",
+              "h\u2083",
+              "only",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:424",
+            "n_cited": 18,
+            "n_unseen": 6,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "fun",
+              "ha",
+              "only",
+              "refine",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:4649",
+            "n_cited": 18,
+            "n_unseen": 7,
+            "fraction_unseen": 0.3888888888888889,
+            "unseen": [
+              "Prod.fst_mul",
+              "Prod.snd_mul",
+              "fun",
+              "have",
+              "only",
+              "refine",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:7125",
+            "n_cited": 10,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2,
+            "unseen": [
+              "constructor",
+              "rw"
+            ]
+          },
+          {
+            "problem_id": "fate_m:7415",
+            "n_cited": 12,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "Nat.reduceMul",
+              "only",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:197",
+            "n_cited": 11,
+            "n_unseen": 4,
+            "fraction_unseen": 0.36363636363636365,
+            "unseen": [
+              "norm_num",
+              "ring",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:243",
+            "n_cited": 9,
+            "n_unseen": 6,
+            "fraction_unseen": 0.6666666666666666,
+            "unseen": [
+              "IsIntegral.of_pow",
+              "ha",
+              "only",
+              "refine",
+              "rw",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:261",
+            "n_cited": 1,
+            "n_unseen": 1,
+            "fraction_unseen": 1.0,
+            "unseen": [
+              "Ideal.mul_eq_inf_of_coprime"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:316",
+            "n_cited": 8,
+            "n_unseen": 5,
+            "fraction_unseen": 0.625,
+            "unseen": [
+              "IsNilpotent.isUnit_one_sub",
+              "ha",
+              "obtain",
+              "refine",
+              "rw"
+            ]
+          }
+        ]
+      },
+      "only_li@50k": {
+        "n_problems": 14,
+        "n_problems_citing_any_premise": 14,
+        "n_citing_unseen": 14,
+        "rate": 1.0,
+        "mean_fraction_unseen": 0.45058106575963713,
+        "mean_n_cited": 8.214285714285714,
+        "mean_n_unseen": 3.5,
+        "fractions": [
+          0.5,
+          0.5555555555555556,
+          0.4375,
+          0.5555555555555556,
+          0.25,
+          0.2857142857142857,
+          0.3333333333333333,
+          0.4,
+          0.35714285714285715,
+          0.5,
+          0.8,
+          0.3333333333333333,
+          0.5,
+          0.5
+        ],
+        "problems": [
+          {
+            "problem_id": "fate_m:1108",
+            "n_cited": 6,
+            "n_unseen": 3,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "Subgroup.inf_eq_bot_of_coprime",
+              "only",
+              "simpa"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1144",
+            "n_cited": 9,
+            "n_unseen": 5,
+            "fraction_unseen": 0.5555555555555556,
+            "unseen": [
+              "G",
+              "commGroupOfCyclicCenterQuotient",
+              "hc",
+              "letI",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1581",
+            "n_cited": 16,
+            "n_unseen": 7,
+            "fraction_unseen": 0.4375,
+            "unseen": [
+              "constructor",
+              "hg",
+              "let",
+              "rcases",
+              "simp",
+              "simpa",
+              "with"
+            ]
+          },
+          {
+            "problem_id": "fate_m:1990",
+            "n_cited": 9,
+            "n_unseen": 5,
+            "fraction_unseen": 0.5555555555555556,
+            "unseen": [
+              "convert",
+              "fun",
+              "m",
+              "rw",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:2180",
+            "n_cited": 12,
+            "n_unseen": 3,
+            "fraction_unseen": 0.25,
+            "unseen": [
+              "MulAction.stabilizer_smul_eq_stabilizer_map_conj",
+              "only",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:326",
+            "n_cited": 7,
+            "n_unseen": 2,
+            "fraction_unseen": 0.2857142857142857,
+            "unseen": [
+              "have",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "fate_m:334",
+            "n_cited": 12,
+            "n_unseen": 4,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "Finite.isField_of_domain",
+              "Ideal.Quotient.isDomain_iff_prime",
+              "hI",
+              "have"
+            ]
+          },
+          {
+            "problem_id": "fate_m:378",
+            "n_cited": 5,
+            "n_unseen": 2,
+            "fraction_unseen": 0.4,
+            "unseen": [
+              "IntermediateField.normal_sup",
+              "K"
+            ]
+          },
+          {
+            "problem_id": "fate_m:7532",
+            "n_cited": 14,
+            "n_unseen": 5,
+            "fraction_unseen": 0.35714285714285715,
+            "unseen": [
+              "aesop",
+              "only",
+              "rw",
+              "simp",
+              "tauto"
+            ]
+          },
+          {
+            "problem_id": "fate_m:867",
+            "n_cited": 6,
+            "n_unseen": 3,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "Equiv.Perm.IsCycle.pow_iff",
+              "Nat.coprime_two_left",
+              "cyc"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:262",
+            "n_cited": 5,
+            "n_unseen": 4,
+            "fraction_unseen": 0.8,
+            "unseen": [
+              "Int.ofNat_dvd",
+              "config",
+              "contextual",
+              "simp"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:284",
+            "n_cited": 6,
+            "n_unseen": 2,
+            "fraction_unseen": 0.3333333333333333,
+            "unseen": [
+              "rw",
+              "zpow_natCast_sub_one"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:332",
+            "n_cited": 4,
+            "n_unseen": 2,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "hf",
+              "hg"
+            ]
+          },
+          {
+            "problem_id": "proofnet_test:366",
+            "n_cited": 4,
+            "n_unseen": 2,
+            "fraction_unseen": 0.5,
+            "unseen": [
+              "fun",
+              "simp"
+            ]
+          }
+        ]
+      },
+      "delta_mean_fraction_unseen": 0.013934180898466542,
+      "p_permutation_fraction": 0.8542145785421458,
+      "p_fisher_two_sided_indicator": 1.0,
+      "significant": false
+    }
+  ]
+}
